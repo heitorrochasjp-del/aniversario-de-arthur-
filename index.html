@@ -26,7 +26,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <script>
-        // Tela vertical (retrato)
         const GAME_WIDTH = 540;
         const GAME_HEIGHT = 960;
 
@@ -144,7 +143,7 @@
         }
 
         // ==========================================
-        // GAME SCENE (torre vertical + lava subindo)
+        // GAME SCENE
         // ==========================================
         class GameScene extends Phaser.Scene {
             constructor() { super('GameScene'); }
@@ -159,7 +158,10 @@
                 this.moveLeft = false;
                 this.moveRight = false;
                 this.jump = false;
-                this.lavaVelocidade = 0.35; // sobe mais devagar pra dar tempo
+                // ==========================================
+                // LAVA 3x MAIS LENTA (era 0.35, agora 0.12)
+                // ==========================================
+                this.lavaVelocidade = 0.12;
 
                 this.platforms = this.physics.add.staticGroup();
                 this.coins = this.physics.add.group();
@@ -175,8 +177,10 @@
                 ground.body.setSize(width, 40);
                 ground.setPosition(width/2, height - 40);
 
-                // Jogador começa em cima do chão
-                this.player = this.physics.add.sprite(width/2, height - 100, 'arthur_parado');
+                // ==========================================
+                // BONECO COMEÇA MAIS ALTO (era height - 100)
+                // ==========================================
+                this.player = this.physics.add.sprite(width/2, height - 250, 'arthur_parado');
                 this.player.setBounce(0.1);
                 this.player.setCollideWorldBounds(true);
                 this.player.setScale(1.2);
@@ -189,20 +193,17 @@
                 this.physics.add.overlap(this.player, this.coins, this.coletarMoeda, null, this);
                 this.physics.add.overlap(this.player, this.enemies, this.atingirInimigo, null, this);
 
-                // Lava (retângulo que sobe)
+                // Lava
                 this.lava = this.add.rectangle(width/2, height + 200, width, 400, 0xff4500);
                 this.physics.world.enable(this.lava);
                 this.lava.body.setAllowGravity(false);
                 this.lava.body.setImmovable(true);
 
-                // Desenho da lava por cima (brilho)
                 this.lavaGraphics = this.add.graphics();
                 this.desenharLava(width, height);
 
-                // Bandeira no topo
                 this.criarBandeira(width, height);
 
-                // Câmera NÃO precisa seguir (é tela única vertical)
                 this.physics.world.setBounds(0, 0, width, height);
                 this.cameras.main.setBounds(0, 0, width, height);
 
@@ -218,7 +219,6 @@
                 sky.fillGradientStyle(0x5c94fc, 0x5c94fc, 0x9fd3ff, 0x9fd3ff, 1);
                 sky.fillRect(0, 0, width, height);
 
-                // Nuvens espalhadas
                 for (let i = 0; i < 8; i++) {
                     const x = Phaser.Math.Between(50, width - 50);
                     const y = Phaser.Math.Between(80, height - 300);
@@ -238,15 +238,14 @@
             }
 
             criarPlataformas(width, height) {
-                // Plataformas escalonadas (subindo)
                 const posicoes = [
-                    { x: width * 0.25, y: height - 200 },
-                    { x: width * 0.75, y: height - 320 },
-                    { x: width * 0.3, y: height - 440 },
-                    { x: width * 0.7, y: height - 560 },
-                    { x: width * 0.25, y: height - 680 },
-                    { x: width * 0.75, y: height - 790 },
-                    { x: width * 0.35, y: height - 890 }
+                    { x: width * 0.25, y: height - 320 },
+                    { x: width * 0.75, y: height - 440 },
+                    { x: width * 0.3, y: height - 560 },
+                    { x: width * 0.7, y: height - 680 },
+                    { x: width * 0.25, y: height - 790 },
+                    { x: width * 0.75, y: height - 890 },
+                    { x: width * 0.35, y: height - 990 }
                 ];
 
                 posicoes.forEach(pos => {
@@ -275,12 +274,12 @@
                 const width = this.cameras.main.width;
                 const height = this.cameras.main.height;
                 const posicoesMoedas = [
-                    { x: width * 0.25, y: height - 260 },
-                    { x: width * 0.75, y: height - 380 },
-                    { x: width * 0.3, y: height - 500 },
-                    { x: width * 0.7, y: height - 620 },
-                    { x: width * 0.25, y: height - 740 },
-                    { x: width * 0.75, y: height - 850 }
+                    { x: width * 0.25, y: height - 380 },
+                    { x: width * 0.75, y: height - 500 },
+                    { x: width * 0.3, y: height - 620 },
+                    { x: width * 0.7, y: height - 740 },
+                    { x: width * 0.25, y: height - 840 },
+                    { x: width * 0.75, y: height - 950 }
                 ];
                 posicoesMoedas.forEach(pos => {
                     const coin = this.coins.create(pos.x, pos.y, null).setVisible(false);
@@ -301,10 +300,10 @@
                 const width = this.cameras.main.width;
                 const height = this.cameras.main.height;
                 const posicoes = [
-                    { x: width * 0.75, y: height - 380, min: width * 0.6, max: width * 0.9 },
-                    { x: width * 0.3, y: height - 500, min: width * 0.15, max: width * 0.45 },
-                    { x: width * 0.7, y: height - 620, min: width * 0.55, max: width * 0.85 },
-                    { x: width * 0.35, y: height - 830, min: width * 0.2, max: width * 0.5 }
+                    { x: width * 0.75, y: height - 500, min: width * 0.6, max: width * 0.9 },
+                    { x: width * 0.3, y: height - 620, min: width * 0.15, max: width * 0.45 },
+                    { x: width * 0.7, y: height - 740, min: width * 0.55, max: width * 0.85 },
+                    { x: width * 0.35, y: height - 930, min: width * 0.2, max: width * 0.5 }
                 ];
                 posicoes.forEach(pos => {
                     const enemy = this.enemies.create(pos.x, pos.y, null).setVisible(false);
@@ -332,31 +331,26 @@
 
             criarBandeira(width, height) {
                 this.bandeiraX = width * 0.35;
-                this.bandeiraY = height - 890;
+                this.bandeiraY = height - 990;
 
                 const g = this.add.graphics();
-                // Mastro
                 g.fillStyle(0xcccccc, 1);
                 g.fillRect(this.bandeiraX, this.bandeiraY - 80, 8, 80);
-                // Bandeira dourada
                 g.fillStyle(0xffd700, 1);
                 g.fillTriangle(
                     this.bandeiraX + 8, this.bandeiraY - 80,
                     this.bandeiraX + 8, this.bandeiraY - 40,
                     this.bandeiraX + 60, this.bandeiraY - 60
                 );
-                // Estrela
                 g.fillStyle(0xffffff, 1);
                 g.fillCircle(this.bandeiraX + 28, this.bandeiraY - 60, 6);
             }
 
             desenharLava(width, height) {
-                // Brilho no topo da lava (desenhado por cima do retângulo)
                 this.lavaGraphics.clear();
                 const lavaY = this.lava.y;
                 this.lavaGraphics.fillStyle(0xffd700, 0.6);
                 this.lavaGraphics.fillRect(0, lavaY - 200, width, 8);
-                // Bolhas
                 this.lavaGraphics.fillStyle(0xffaa00, 0.8);
                 for (let x = 30; x < width; x += 80) {
                     this.lavaGraphics.fillCircle(x, lavaY - 160, 6);
@@ -368,22 +362,26 @@
                 const width = this.cameras.main.width;
                 const height = this.cameras.main.height;
                 const btnSize = 70;
-                const margin = 10;
+                // ==========================================
+                // MARGEM MAIOR EMBAIXO (era 10, agora 100)
+                // ==========================================
+                const marginSides = 15;
+                const marginBottom = 100;
 
-                // Esquerda (canto inferior esquerdo)
-                this.btnLeft = this.add.circle(margin + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.35).setScrollFactor(0).setDepth(1000);
+                // Esquerda
+                this.btnLeft = this.add.circle(marginSides + btnSize/2, height - marginBottom - btnSize/2, btnSize/2, 0xffffff, 0.35).setScrollFactor(0).setDepth(1000);
                 this.btnLeft.setInteractive({ useHandCursor: true });
-                this.add.text(margin + btnSize/2, height - margin - btnSize/2, '◀', { fontFamily: 'monospace', fontSize: '34px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+                this.add.text(marginSides + btnSize/2, height - marginBottom - btnSize/2, '◀', { fontFamily: 'monospace', fontSize: '34px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-                // Direita (ao lado da esquerda)
-                this.btnRight = this.add.circle(margin + btnSize + 10 + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.35).setScrollFactor(0).setDepth(1000);
+                // Direita
+                this.btnRight = this.add.circle(marginSides + btnSize + 10 + btnSize/2, height - marginBottom - btnSize/2, btnSize/2, 0xffffff, 0.35).setScrollFactor(0).setDepth(1000);
                 this.btnRight.setInteractive({ useHandCursor: true });
-                this.add.text(margin + btnSize + 10 + btnSize/2, height - margin - btnSize/2, '▶', { fontFamily: 'monospace', fontSize: '34px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+                this.add.text(marginSides + btnSize + 10 + btnSize/2, height - marginBottom - btnSize/2, '▶', { fontFamily: 'monospace', fontSize: '34px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-                // Pular (canto inferior direito)
-                this.btnJump = this.add.circle(width - margin - btnSize/2, height - margin - btnSize/2, btnSize/2 + 5, 0xffd700, 0.5).setScrollFactor(0).setDepth(1000);
+                // Pular
+                this.btnJump = this.add.circle(width - marginSides - btnSize/2, height - marginBottom - btnSize/2, btnSize/2 + 5, 0xffd700, 0.5).setScrollFactor(0).setDepth(1000);
                 this.btnJump.setInteractive({ useHandCursor: true });
-                this.add.text(width - margin - btnSize/2, height - margin - btnSize/2, '⬆', { fontFamily: 'monospace', fontSize: '40px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
+                this.add.text(width - marginSides - btnSize/2, height - marginBottom - btnSize/2, '⬆', { fontFamily: 'monospace', fontSize: '40px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
                 // Eventos
                 this.btnLeft.on('pointerdown', () => { this.moveLeft = true; this.btnLeft.setFillStyle(0xffffff, 0.7); });
@@ -425,7 +423,6 @@
 
             atingirInimigo(player, enemy) {
                 if (this.isGameOver || this.isWin) return;
-                // Se pulou em cima do inimigo
                 if (player.body.velocity.y > 0 && player.y < enemy.y - 15) {
                     enemy.destroy();
                     if (enemy.graphics) enemy.graphics.destroy();
@@ -461,7 +458,6 @@
                 const speed = 220;
                 const jumpForce = -700;
 
-                // Movimentação
                 if (this.moveLeft || this.cursors.left.isDown) {
                     this.player.setVelocityX(-speed);
                     this.player.setFlipX(true);
@@ -472,12 +468,10 @@
                     this.player.setVelocityX(0);
                 }
 
-                // Pulo (só quando toca o chão)
                 if ((this.jump || this.cursors.up.isDown || this.spaceKey.isDown) && this.player.body.touching.down) {
                     this.player.setVelocityY(jumpForce);
                 }
 
-                // Sprite
                 if (!this.player.body.touching.down) {
                     this.player.setTexture('arthur_pulando');
                 } else if (this.moveLeft || this.moveRight || this.cursors.left.isDown || this.cursors.right.isDown) {
@@ -486,17 +480,15 @@
                     this.player.setTexture('arthur_parado');
                 }
 
-                // Lava sobe
+                // Lava sobe devagar
                 this.lava.y -= this.lavaVelocidade;
                 this.lava.body.updateFromGameObject();
                 this.desenharLava(this.cameras.main.width, this.cameras.main.height);
 
-                // Verifica colisão com lava (se o Arthur está dentro dela)
                 if (this.player.y + 20 > this.lava.y - 200) {
                     this.gameOver('🔥 A LAVA TE PEGOU! 🔥');
                 }
 
-                // Inimigos se movem
                 this.enemies.children.iterate(enemy => {
                     if (!enemy || !enemy.active) return;
                     if (enemy.x <= enemy.minX) enemy.direction = 1;
@@ -505,12 +497,10 @@
                     if (enemy.graphics) enemy.graphics.setPosition(enemy.x - 17, enemy.y - 17);
                 });
 
-                // Moedas seguem
                 this.coins.children.iterate(coin => {
                     if (coin && coin.active && coin.graphics) coin.graphics.setPosition(coin.x, coin.y);
                 });
 
-                // Chegou na bandeira?
                 if (this.player.y < this.bandeiraY - 20 && !this.isWin) {
                     this.isWin = true;
                     this.physics.pause();
@@ -605,7 +595,7 @@
         }
 
         // ==========================================
-        // CONFIG FINAL (Retrato)
+        // CONFIG FINAL
         // ==========================================
         const config = {
             type: Phaser.CANVAS,
