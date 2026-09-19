@@ -8,38 +8,11 @@
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
         html, body { background: #000; overflow: hidden; width: 100vw; height: 100dvh; height: 100vh; touch-action: none; overscroll-behavior: none; }
         #game-container { width: 100%; height: 100%; position: relative; }
-        #game-container canvas { display: block; max-width: 100%; max-height: 100%; margin: 0 auto; }
-
-        /* Faixinha fina no topo, não cobre o jogo */
-        #rotate-overlay {
-            position: fixed; top: 0; left: 0; width: 100%;
-            background: rgba(255, 69, 0, 0.95);
-            color: #fff; display: none;
-            flex-direction: row; justify-content: center; align-items: center;
-            z-index: 9999; text-align: center;
-            padding: 8px 10px;
-            font-family: monospace;
-        }
-        #rotate-overlay .icon {
-            font-size: 22px; margin-right: 10px;
-            animation: spin 2s linear infinite;
-        }
-        @keyframes spin { 100% { transform: rotate(90deg); } }
-        #rotate-overlay p { font-size: 12px; line-height: 1.3; margin: 0; }
-
-        #error-box {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: #ff0000; color: #fff;
-            padding: 15px; font-family: monospace; font-size: 14px;
-            z-index: 99999; display: none; word-break: break-all;
-        }
+        #game-container canvas { display: block; margin: 0 auto; }
+        #error-box { position: fixed; bottom: 0; left: 0; right: 0; background: #ff0000; color: #fff; padding: 15px; font-family: monospace; font-size: 14px; z-index: 99999; display: none; word-break: break-all; }
     </style>
 </head>
 <body>
-    <div id="rotate-overlay">
-        <div class="icon">🔄</div>
-        <p>Vire o celular na horizontal para jogar!</p>
-    </div>
     <div id="game-container"></div>
     <div id="error-box"></div>
 
@@ -53,9 +26,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <script>
-        const GAME_WIDTH = 960;
-        const GAME_HEIGHT = 540;
-        const MAP_WIDTH = GAME_WIDTH * 3;
+        // Tela vertical (retrato)
+        const GAME_WIDTH = 540;
+        const GAME_HEIGHT = 960;
 
         // ==========================================
         // BOOT SCENE
@@ -92,9 +65,7 @@
                 }
             }
             criarTexturaCircular(keyOriginal, keyNova) {
-                if (!this.textures.exists(keyOriginal)) {
-                    throw new Error('Textura não existe: ' + keyOriginal);
-                }
+                if (!this.textures.exists(keyOriginal)) throw new Error('Textura não existe: ' + keyOriginal);
                 const img = this.textures.get(keyOriginal).getSourceImage();
                 const size = 64;
                 const canvas = document.createElement('canvas');
@@ -131,43 +102,49 @@
                 const width = this.cameras.main.width;
                 const height = this.cameras.main.height;
                 const bg = this.add.graphics();
-                bg.fillGradientStyle(0x5c94fc, 0x5c94fc, 0x87ceeb, 0x87ceeb, 1);
+                bg.fillGradientStyle(0x5c94fc, 0x5c94fc, 0x9fd3ff, 0x9fd3ff, 1);
                 bg.fillRect(0, 0, width, height);
 
-                this.add.image(100, 80, 'arthur_parado').setScale(0.5).setAlpha(0.3);
-                this.add.image(800, 120, 'arthur_andando').setScale(0.5).setAlpha(0.3);
-
-                this.add.text(width/2, height * 0.2, 'ANIVERSÁRIO DO', {
-                    fontFamily: 'monospace', fontSize: '28px', fill: '#ffffff',
+                this.add.text(width/2, height * 0.12, 'ANIVERSÁRIO DO', {
+                    fontFamily: 'monospace', fontSize: '22px', fill: '#ffffff',
                     stroke: '#000000', strokeThickness: 4
                 }).setOrigin(0.5);
 
-                this.add.text(width/2, height * 0.3, 'ARTHUR', {
-                    fontFamily: 'monospace', fontSize: '64px', fill: '#ffd700',
+                this.add.text(width/2, height * 0.2, 'ARTHUR', {
+                    fontFamily: 'monospace', fontSize: '52px', fill: '#ffd700',
                     stroke: '#000000', strokeThickness: 6
                 }).setOrigin(0.5);
 
-                const fotoMenu = this.add.image(width/2, height * 0.55, 'arthur_parado').setScale(2);
-                this.tweens.add({ targets: fotoMenu, y: height * 0.55 - 10, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                const fotoMenu = this.add.image(width/2, height * 0.45, 'arthur_parado').setScale(2.5);
+                this.tweens.add({ targets: fotoMenu, y: height * 0.45 - 10, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-                const btnStart = this.add.text(width/2, height * 0.8, '▶ COMEÇAR', {
-                    fontFamily: 'monospace', fontSize: '32px', fill: '#ffffff',
+                const btnStart = this.add.text(width/2, height * 0.7, '▶ COMEÇAR', {
+                    fontFamily: 'monospace', fontSize: '28px', fill: '#ffffff',
                     backgroundColor: '#e24a4a', padding: { x: 25, y: 20 }
                 }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
                 this.tweens.add({ targets: btnStart, scale: 1.1, duration: 500, yoyo: true, repeat: -1 });
-
                 btnStart.on('pointerdown', () => { this.scene.start('GameScene'); });
 
-                this.add.text(width/2, height * 0.93, '◀ ▶ para andar  •  ⬆ para pular', {
-                    fontFamily: 'monospace', fontSize: '14px', fill: '#ffffff',
+                this.add.text(width/2, height * 0.87, 'Suba nas plataformas!', {
+                    fontFamily: 'monospace', fontSize: '16px', fill: '#ffffff',
+                    stroke: '#000000', strokeThickness: 3
+                }).setOrigin(0.5);
+
+                this.add.text(width/2, height * 0.92, '🔥 Cuidado com a lava! 🔥', {
+                    fontFamily: 'monospace', fontSize: '14px', fill: '#ff6b6b',
+                    stroke: '#000000', strokeThickness: 3
+                }).setOrigin(0.5);
+
+                this.add.text(width/2, height * 0.97, '◀ ▶ andar  •  ⬆ pular', {
+                    fontFamily: 'monospace', fontSize: '12px', fill: '#ffffff',
                     stroke: '#000000', strokeThickness: 3
                 }).setOrigin(0.5);
             }
         }
 
         // ==========================================
-        // GAME SCENE
+        // GAME SCENE (torre vertical + lava subindo)
         // ==========================================
         class GameScene extends Phaser.Scene {
             constructor() { super('GameScene'); }
@@ -182,8 +159,7 @@
                 this.moveLeft = false;
                 this.moveRight = false;
                 this.jump = false;
-                this.lavaAtiva = false;
-                this.chaoGraphics = null;
+                this.lavaVelocidade = 0.35; // sobe mais devagar pra dar tempo
 
                 this.platforms = this.physics.add.staticGroup();
                 this.coins = this.physics.add.group();
@@ -194,7 +170,13 @@
                 this.criarMoedas();
                 this.criarInimigos();
 
-                this.player = this.physics.add.sprite(100, height - 150, 'arthur_parado');
+                // Chão no fundo
+                const ground = this.platforms.create(width/2, height - 40, null).setVisible(false);
+                ground.body.setSize(width, 40);
+                ground.setPosition(width/2, height - 40);
+
+                // Jogador começa em cima do chão
+                this.player = this.physics.add.sprite(width/2, height - 100, 'arthur_parado');
                 this.player.setBounce(0.1);
                 this.player.setCollideWorldBounds(true);
                 this.player.setScale(1.2);
@@ -207,17 +189,22 @@
                 this.physics.add.overlap(this.player, this.coins, this.coletarMoeda, null, this);
                 this.physics.add.overlap(this.player, this.enemies, this.atingirInimigo, null, this);
 
-                this.lavaZone = this.add.zone(MAP_WIDTH/2, height - 20, MAP_WIDTH, 40);
-                this.physics.world.enable(this.lavaZone);
-                this.lavaZone.body.setAllowGravity(false);
-                this.lavaZone.body.setImmovable(true);
-                this.physics.add.overlap(this.player, this.lavaZone, this.cairNaLava, null, this);
+                // Lava (retângulo que sobe)
+                this.lava = this.add.rectangle(width/2, height + 200, width, 400, 0xff4500);
+                this.physics.world.enable(this.lava);
+                this.lava.body.setAllowGravity(false);
+                this.lava.body.setImmovable(true);
 
-                this.criarBandeira(width);
+                // Desenho da lava por cima (brilho)
+                this.lavaGraphics = this.add.graphics();
+                this.desenharLava(width, height);
 
-                this.cameras.main.setBounds(0, 0, MAP_WIDTH, height);
-                this.physics.world.setBounds(0, 0, MAP_WIDTH, height);
-                this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+                // Bandeira no topo
+                this.criarBandeira(width, height);
+
+                // Câmera NÃO precisa seguir (é tela única vertical)
+                this.physics.world.setBounds(0, 0, width, height);
+                this.cameras.main.setBounds(0, 0, width, height);
 
                 this.criarControlesTateis();
                 this.cursors = this.input.keyboard.createCursorKeys();
@@ -229,119 +216,43 @@
             criarCenario(width, height) {
                 const sky = this.add.graphics();
                 sky.fillGradientStyle(0x5c94fc, 0x5c94fc, 0x9fd3ff, 0x9fd3ff, 1);
-                sky.fillRect(0, 0, MAP_WIDTH, height);
+                sky.fillRect(0, 0, width, height);
 
-                this.chaoGraphics = this.add.graphics();
-                this.desenharChaoNormal(this.chaoGraphics, height);
-
-                for (let i = 0; i < 24; i++) {
-                    const cloudX = 100 + i * 120;
-                    const cloudY = 80 + (i % 3) * 30;
-                    this.desenharNuvem(cloudX, cloudY);
+                // Nuvens espalhadas
+                for (let i = 0; i < 8; i++) {
+                    const x = Phaser.Math.Between(50, width - 50);
+                    const y = Phaser.Math.Between(80, height - 300);
+                    this.desenharNuvem(x, y);
                 }
-
-                for (let x = 150; x < MAP_WIDTH - 100; x += 300) {
-                    this.desenharArbusto(x, height - 80);
-                }
-            }
-
-            desenharChaoNormal(g, height) {
-                g.clear();
-                g.fillStyle(0x4ade80, 1);
-                g.fillRect(0, height - 80, MAP_WIDTH, 20);
-                g.fillStyle(0x8B4513, 1);
-                g.fillRect(0, height - 60, MAP_WIDTH, 60);
-                g.lineStyle(2, 0x654321);
-                for (let x = 0; x < MAP_WIDTH; x += 40) {
-                    g.strokeRect(x, height - 60, 40, 30);
-                    g.strokeRect(x + 20, height - 30, 40, 30);
-                }
-            }
-
-            desenharChaoLava(g, height) {
-                g.clear();
-                g.fillStyle(0xff4500, 1);
-                g.fillRect(0, height - 80, MAP_WIDTH, 80);
-                g.fillStyle(0xff6347, 1);
-                g.fillRect(0, height - 80, MAP_WIDTH, 15);
-                g.fillStyle(0xffaa00, 1);
-                for (let x = 30; x < MAP_WIDTH; x += 90) {
-                    g.fillCircle(x, height - 60, 8);
-                    g.fillCircle(x + 40, height - 40, 6);
-                    g.fillCircle(x + 20, height - 25, 5);
-                }
-                g.fillStyle(0xffd700, 0.4);
-                g.fillRect(0, height - 80, MAP_WIDTH, 5);
-            }
-
-            ativarLava() {
-                if (this.lavaAtiva) return;
-                this.lavaAtiva = true;
-                this.desenharChaoLava(this.chaoGraphics, this.cameras.main.height);
-
-                const width = this.cameras.main.width;
-                const height = this.cameras.main.height;
-                const aviso = this.add.text(width/2, height * 0.4, '🔥 A LAVA SUBIU! 🔥', {
-                    fontFamily: 'monospace', fontSize: '42px', fill: '#ff4500',
-                    stroke: '#000000', strokeThickness: 6
-                }).setOrigin(0.5).setScrollFactor(0).setDepth(500);
-
-                this.tweens.add({
-                    targets: aviso,
-                    alpha: 0,
-                    scale: 1.5,
-                    duration: 1500,
-                    onComplete: () => aviso.destroy()
-                });
             }
 
             desenharNuvem(x, y) {
                 const g = this.add.graphics();
-                g.fillStyle(0xffffff, 0.9);
-                g.fillCircle(x, y, 25);
-                g.fillCircle(x + 30, y - 10, 35);
-                g.fillCircle(x + 65, y, 25);
+                g.fillStyle(0xffffff, 0.85);
+                g.fillCircle(x, y, 18);
+                g.fillCircle(x + 22, y - 8, 25);
+                g.fillCircle(x + 48, y, 18);
                 g.fillStyle(0xffffff, 1);
-                g.fillCircle(x + 15, y + 5, 20);
-                g.fillCircle(x + 50, y + 5, 20);
-            }
-
-            desenharArbusto(x, y) {
-                const g = this.add.graphics();
-                g.fillStyle(0x228B22, 1);
-                g.fillCircle(x, y, 25);
-                g.fillCircle(x + 25, y - 15, 30);
-                g.fillCircle(x + 50, y, 25);
-                g.fillStyle(0x2e7d32, 1);
-                g.fillCircle(x + 25, y + 5, 20);
+                g.fillCircle(x + 12, y + 4, 15);
+                g.fillCircle(x + 38, y + 4, 15);
             }
 
             criarPlataformas(width, height) {
-                const ground = this.platforms.create(MAP_WIDTH/2, height - 20, null).setVisible(false);
-                ground.body.setSize(MAP_WIDTH, 40);
-                ground.setPosition(MAP_WIDTH/2, height - 20);
-
+                // Plataformas escalonadas (subindo)
                 const posicoes = [
-                    { x: 350, y: height - 180, ativaLava: true },
-                    { x: 550, y: height - 260 },
-                    { x: 750, y: height - 180 },
-                    { x: 950, y: height - 280 },
-                    { x: 1150, y: height - 200 },
-                    { x: 1350, y: height - 300 },
-                    { x: 1550, y: height - 220 },
-                    { x: 1750, y: height - 180 },
-                    { x: 1950, y: height - 280 },
-                    { x: 2150, y: height - 200 },
-                    { x: 2350, y: height - 260 },
-                    { x: 2550, y: height - 180 },
-                    { x: 2750, y: height - 240 }
+                    { x: width * 0.25, y: height - 200 },
+                    { x: width * 0.75, y: height - 320 },
+                    { x: width * 0.3, y: height - 440 },
+                    { x: width * 0.7, y: height - 560 },
+                    { x: width * 0.25, y: height - 680 },
+                    { x: width * 0.75, y: height - 790 },
+                    { x: width * 0.35, y: height - 890 }
                 ];
 
                 posicoes.forEach(pos => {
                     const plat = this.platforms.create(pos.x, pos.y, null).setVisible(false);
-                    plat.body.setSize(120, 30);
+                    plat.body.setSize(130, 25);
                     plat.setPosition(pos.x, pos.y);
-                    plat.ativaLava = pos.ativaLava || false;
                     this.desenharPlataforma(pos.x, pos.y);
                 });
             }
@@ -349,32 +260,27 @@
             desenharPlataforma(x, y) {
                 const g = this.add.graphics();
                 g.fillStyle(0x8B4513, 1);
-                g.fillRect(x - 60, y - 15, 120, 30);
+                g.fillRect(x - 65, y - 12, 130, 25);
                 g.fillStyle(0x4ade80, 1);
-                g.fillRect(x - 60, y - 15, 120, 8);
+                g.fillRect(x - 65, y - 12, 130, 7);
                 g.lineStyle(2, 0x654321);
-                for (let i = -60; i < 60; i += 30) {
-                    g.strokeRect(x + i, y - 7, 30, 22);
+                for (let i = -65; i < 65; i += 32) {
+                    g.strokeRect(x + i, y - 5, 32, 18);
                 }
                 g.lineStyle(2, 0x2e7d32);
-                g.strokeRect(x - 60, y - 15, 120, 8);
+                g.strokeRect(x - 65, y - 12, 130, 7);
             }
 
             criarMoedas() {
+                const width = this.cameras.main.width;
+                const height = this.cameras.main.height;
                 const posicoesMoedas = [
-                    { x: 350, y: 300 }, { x: 380, y: 300 },
-                    { x: 550, y: 220 },
-                    { x: 750, y: 300 }, { x: 780, y: 300 },
-                    { x: 950, y: 200 },
-                    { x: 1150, y: 280 }, { x: 1180, y: 280 },
-                    { x: 1350, y: 180 },
-                    { x: 1550, y: 260 },
-                    { x: 1750, y: 300 }, { x: 1780, y: 300 },
-                    { x: 1950, y: 200 },
-                    { x: 2150, y: 280 },
-                    { x: 2350, y: 220 }, { x: 2380, y: 220 },
-                    { x: 2550, y: 300 },
-                    { x: 2750, y: 240 }
+                    { x: width * 0.25, y: height - 260 },
+                    { x: width * 0.75, y: height - 380 },
+                    { x: width * 0.3, y: height - 500 },
+                    { x: width * 0.7, y: height - 620 },
+                    { x: width * 0.25, y: height - 740 },
+                    { x: width * 0.75, y: height - 850 }
                 ];
                 posicoesMoedas.forEach(pos => {
                     const coin = this.coins.create(pos.x, pos.y, null).setVisible(false);
@@ -392,24 +298,23 @@
             }
 
             criarInimigos() {
-                const posicoesInimigos = [
-                    { x: 600, y: 400, min: 550, max: 650 },
-                    { x: 1000, y: 400, min: 950, max: 1100 },
-                    { x: 1500, y: 400, min: 1450, max: 1600 },
-                    { x: 2000, y: 400, min: 1950, max: 2100 },
-                    { x: 2400, y: 400, min: 2350, max: 2500 },
-                    { x: 2700, y: 400, min: 2650, max: 2800 }
+                const width = this.cameras.main.width;
+                const height = this.cameras.main.height;
+                const posicoes = [
+                    { x: width * 0.75, y: height - 380, min: width * 0.6, max: width * 0.9 },
+                    { x: width * 0.3, y: height - 500, min: width * 0.15, max: width * 0.45 },
+                    { x: width * 0.7, y: height - 620, min: width * 0.55, max: width * 0.85 },
+                    { x: width * 0.35, y: height - 830, min: width * 0.2, max: width * 0.5 }
                 ];
-                posicoesInimigos.forEach(pos => {
+                posicoes.forEach(pos => {
                     const enemy = this.enemies.create(pos.x, pos.y, null).setVisible(false);
                     enemy.body.setSize(35, 35);
                     enemy.setPosition(pos.x, pos.y);
                     enemy.setBounce(0);
-                    enemy.setCollideWorldBounds(true);
                     enemy.minX = pos.min;
                     enemy.maxX = pos.max;
                     enemy.direction = 1;
-                    enemy.speed = 60;
+                    enemy.speed = 50;
                     const g = this.add.graphics();
                     g.fillStyle(0x8B4513, 1);
                     g.fillRect(pos.x - 17, pos.y - 17, 35, 35);
@@ -425,60 +330,87 @@
                 });
             }
 
-            criarBandeira(width) {
-                this.bandeiraX = MAP_WIDTH - 150;
-                this.bandeiraY = 400;
-                const g = this.add.graphics();
-                g.fillStyle(0xcccccc, 1);
-                g.fillRect(this.bandeiraX, this.bandeiraY - 150, 10, 150);
-                g.fillStyle(0xffd700, 1);
-                g.fillTriangle(this.bandeiraX + 10, this.bandeiraY - 150, this.bandeiraX + 10, this.bandeiraY - 100, this.bandeiraX + 80, this.bandeiraY - 125);
-                g.fillStyle(0xffffff, 1);
-                g.fillCircle(this.bandeiraX + 35, this.bandeiraY - 125, 8);
+            criarBandeira(width, height) {
+                this.bandeiraX = width * 0.35;
+                this.bandeiraY = height - 890;
 
-                const plat = this.platforms.create(this.bandeiraX + 20, this.bandeiraY, null).setVisible(false);
-                plat.body.setSize(120, 30);
-                plat.setPosition(this.bandeiraX + 20, this.bandeiraY);
-                this.desenharPlataforma(this.bandeiraX + 20, this.bandeiraY);
+                const g = this.add.graphics();
+                // Mastro
+                g.fillStyle(0xcccccc, 1);
+                g.fillRect(this.bandeiraX, this.bandeiraY - 80, 8, 80);
+                // Bandeira dourada
+                g.fillStyle(0xffd700, 1);
+                g.fillTriangle(
+                    this.bandeiraX + 8, this.bandeiraY - 80,
+                    this.bandeiraX + 8, this.bandeiraY - 40,
+                    this.bandeiraX + 60, this.bandeiraY - 60
+                );
+                // Estrela
+                g.fillStyle(0xffffff, 1);
+                g.fillCircle(this.bandeiraX + 28, this.bandeiraY - 60, 6);
+            }
+
+            desenharLava(width, height) {
+                // Brilho no topo da lava (desenhado por cima do retângulo)
+                this.lavaGraphics.clear();
+                const lavaY = this.lava.y;
+                this.lavaGraphics.fillStyle(0xffd700, 0.6);
+                this.lavaGraphics.fillRect(0, lavaY - 200, width, 8);
+                // Bolhas
+                this.lavaGraphics.fillStyle(0xffaa00, 0.8);
+                for (let x = 30; x < width; x += 80) {
+                    this.lavaGraphics.fillCircle(x, lavaY - 160, 6);
+                    this.lavaGraphics.fillCircle(x + 40, lavaY - 130, 5);
+                }
             }
 
             criarControlesTateis() {
                 const width = this.cameras.main.width;
                 const height = this.cameras.main.height;
-                const btnSize = 75;
-                const margin = 8;
+                const btnSize = 70;
+                const margin = 10;
 
-                this.btnLeft = this.add.circle(margin + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.3).setScrollFactor(0).setDepth(100);
+                // Esquerda (canto inferior esquerdo)
+                this.btnLeft = this.add.circle(margin + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.35).setScrollFactor(0).setDepth(1000);
                 this.btnLeft.setInteractive({ useHandCursor: true });
-                this.add.text(margin + btnSize/2, height - margin - btnSize/2, '◀', { fontFamily: 'monospace', fontSize: '36px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                this.add.text(margin + btnSize/2, height - margin - btnSize/2, '◀', { fontFamily: 'monospace', fontSize: '34px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-                this.btnRight = this.add.circle(margin + btnSize + 8 + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.3).setScrollFactor(0).setDepth(100);
+                // Direita (ao lado da esquerda)
+                this.btnRight = this.add.circle(margin + btnSize + 10 + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.35).setScrollFactor(0).setDepth(1000);
                 this.btnRight.setInteractive({ useHandCursor: true });
-                this.add.text(margin + btnSize + 8 + btnSize/2, height - margin - btnSize/2, '▶', { fontFamily: 'monospace', fontSize: '36px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                this.add.text(margin + btnSize + 10 + btnSize/2, height - margin - btnSize/2, '▶', { fontFamily: 'monospace', fontSize: '34px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-                this.btnJump = this.add.circle(width - margin - btnSize/2, height - margin - btnSize/2, btnSize/2 + 8, 0xffd700, 0.4).setScrollFactor(0).setDepth(100);
+                // Pular (canto inferior direito)
+                this.btnJump = this.add.circle(width - margin - btnSize/2, height - margin - btnSize/2, btnSize/2 + 5, 0xffd700, 0.5).setScrollFactor(0).setDepth(1000);
                 this.btnJump.setInteractive({ useHandCursor: true });
-                this.add.text(width - margin - btnSize/2, height - margin - btnSize/2, '⬆', { fontFamily: 'monospace', fontSize: '42px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                this.add.text(width - margin - btnSize/2, height - margin - btnSize/2, '⬆', { fontFamily: 'monospace', fontSize: '40px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-                this.btnLeft.on('pointerdown', () => { this.moveLeft = true; this.btnLeft.setFillStyle(0xffffff, 0.6); });
-                this.btnLeft.on('pointerup', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.3); });
-                this.btnLeft.on('pointerout', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.3); });
+                // Eventos
+                this.btnLeft.on('pointerdown', () => { this.moveLeft = true; this.btnLeft.setFillStyle(0xffffff, 0.7); });
+                this.btnLeft.on('pointerup', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.35); });
+                this.btnLeft.on('pointerout', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.35); });
 
-                this.btnRight.on('pointerdown', () => { this.moveRight = true; this.btnRight.setFillStyle(0xffffff, 0.6); });
-                this.btnRight.on('pointerup', () => { this.moveRight = false; this.btnRight.setFillStyle(0xffffff, 0.3); });
-                this.btnRight.on('pointerout', () => { this.moveRight = false; this.btnRight.setFillStyle(0xffffff, 0.3); });
+                this.btnRight.on('pointerdown', () => { this.moveRight = true; this.btnRight.setFillStyle(0xffffff, 0.7); });
+                this.btnRight.on('pointerup', () => { this.moveRight = false; this.btnRight.setFillStyle(0xffffff, 0.35); });
+                this.btnRight.on('pointerout', () => { this.moveRight = false; this.btnRight.setFillStyle(0xffffff, 0.35); });
 
-                this.btnJump.on('pointerdown', () => { this.jump = true; this.btnJump.setFillStyle(0xffd700, 0.7); });
-                this.btnJump.on('pointerup', () => { this.jump = false; this.btnJump.setFillStyle(0xffd700, 0.4); });
-                this.btnJump.on('pointerout', () => { this.jump = false; this.btnJump.setFillStyle(0xffd700, 0.4); });
+                this.btnJump.on('pointerdown', () => { this.jump = true; this.btnJump.setFillStyle(0xffd700, 0.8); });
+                this.btnJump.on('pointerup', () => { this.jump = false; this.btnJump.setFillStyle(0xffd700, 0.5); });
+                this.btnJump.on('pointerout', () => { this.jump = false; this.btnJump.setFillStyle(0xffd700, 0.5); });
 
                 this.input.addPointer(3);
             }
 
             criarHUD() {
                 const width = this.cameras.main.width;
-                this.coinText = this.add.text(20, 20, '🪙 0', { fontFamily: 'monospace', fontSize: '24px', fill: '#ffd700', stroke: '#000000', strokeThickness: 4 }).setScrollFactor(0).setDepth(200);
-                this.scoreText = this.add.text(width - 20, 20, 'PONTOS: 0', { fontFamily: 'monospace', fontSize: '20px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(1, 0).setScrollFactor(0).setDepth(200);
+                this.coinText = this.add.text(15, 15, '🪙 0', {
+                    fontFamily: 'monospace', fontSize: '22px', fill: '#ffd700',
+                    stroke: '#000000', strokeThickness: 4
+                }).setScrollFactor(0).setDepth(2000);
+                this.scoreText = this.add.text(width - 15, 15, 'PONTOS: 0', {
+                    fontFamily: 'monospace', fontSize: '16px', fill: '#ffffff',
+                    stroke: '#000000', strokeThickness: 4
+                }).setOrigin(1, 0).setScrollFactor(0).setDepth(2000);
             }
 
             coletarMoeda(player, coin) {
@@ -491,17 +423,10 @@
                 this.scoreText.setText('PONTOS: ' + this.score);
             }
 
-            cairNaLava(player, lava) {
-                if (this.isGameOver || this.isWin) return;
-                if (!this.lavaAtiva) return;
-                if (player.body.touching.down) {
-                    this.gameOver('🔥 VOCÊ CAIU NA LAVA! 🔥');
-                }
-            }
-
             atingirInimigo(player, enemy) {
                 if (this.isGameOver || this.isWin) return;
-                if (player.body.velocity.y > 0 && player.y < enemy.y - 20) {
+                // Se pulou em cima do inimigo
+                if (player.body.velocity.y > 0 && player.y < enemy.y - 15) {
                     enemy.destroy();
                     if (enemy.graphics) enemy.graphics.destroy();
                     player.setVelocityY(-400);
@@ -513,13 +438,20 @@
             }
 
             gameOver(mensagem) {
+                if (this.isGameOver) return;
                 this.isGameOver = true;
                 this.physics.pause();
                 this.player.setTint(0xff0000);
                 const width = this.cameras.main.width;
                 const height = this.cameras.main.height;
-                this.add.text(width/2, height/2 - 30, mensagem, { fontFamily: 'monospace', fontSize: '32px', fill: '#ff0000', stroke: '#000000', strokeThickness: 6 }).setOrigin(0.5).setScrollFactor(0).setDepth(300);
-                const btnRestart = this.add.text(width/2, height/2 + 60, '🔄 TENTAR NOVAMENTE', { fontFamily: 'monospace', fontSize: '24px', fill: '#ffffff', backgroundColor: '#e24a4a', padding: { x: 20, y: 15 } }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive();
+                this.add.text(width/2, height/2 - 40, mensagem, {
+                    fontFamily: 'monospace', fontSize: '28px', fill: '#ff0000',
+                    stroke: '#000000', strokeThickness: 6
+                }).setOrigin(0.5).setScrollFactor(0).setDepth(3000);
+                const btnRestart = this.add.text(width/2, height/2 + 50, '🔄 TENTAR NOVAMENTE', {
+                    fontFamily: 'monospace', fontSize: '20px', fill: '#ffffff',
+                    backgroundColor: '#e24a4a', padding: { x: 20, y: 15 }
+                }).setOrigin(0.5).setScrollFactor(0).setDepth(3000).setInteractive();
                 btnRestart.on('pointerdown', () => { this.scene.restart(); });
             }
 
@@ -527,8 +459,9 @@
                 if (this.isGameOver || this.isWin) return;
 
                 const speed = 220;
-                const jumpForce = -720;
+                const jumpForce = -700;
 
+                // Movimentação
                 if (this.moveLeft || this.cursors.left.isDown) {
                     this.player.setVelocityX(-speed);
                     this.player.setFlipX(true);
@@ -539,10 +472,12 @@
                     this.player.setVelocityX(0);
                 }
 
+                // Pulo (só quando toca o chão)
                 if ((this.jump || this.cursors.up.isDown || this.spaceKey.isDown) && this.player.body.touching.down) {
                     this.player.setVelocityY(jumpForce);
                 }
 
+                // Sprite
                 if (!this.player.body.touching.down) {
                     this.player.setTexture('arthur_pulando');
                 } else if (this.moveLeft || this.moveRight || this.cursors.left.isDown || this.cursors.right.isDown) {
@@ -551,18 +486,17 @@
                     this.player.setTexture('arthur_parado');
                 }
 
-                if (!this.lavaAtiva) {
-                    this.platforms.children.iterate(plat => {
-                        if (plat && plat.active && plat.ativaLava) {
-                            const dx = Math.abs(this.player.x - plat.x);
-                            const dy = this.player.y - plat.y;
-                            if (dx < 80 && dy > -30 && dy < 30 && this.player.body.touching.down) {
-                                this.ativarLava();
-                            }
-                        }
-                    });
+                // Lava sobe
+                this.lava.y -= this.lavaVelocidade;
+                this.lava.body.updateFromGameObject();
+                this.desenharLava(this.cameras.main.width, this.cameras.main.height);
+
+                // Verifica colisão com lava (se o Arthur está dentro dela)
+                if (this.player.y + 20 > this.lava.y - 200) {
+                    this.gameOver('🔥 A LAVA TE PEGOU! 🔥');
                 }
 
+                // Inimigos se movem
                 this.enemies.children.iterate(enemy => {
                     if (!enemy || !enemy.active) return;
                     if (enemy.x <= enemy.minX) enemy.direction = 1;
@@ -571,11 +505,13 @@
                     if (enemy.graphics) enemy.graphics.setPosition(enemy.x - 17, enemy.y - 17);
                 });
 
+                // Moedas seguem
                 this.coins.children.iterate(coin => {
                     if (coin && coin.active && coin.graphics) coin.graphics.setPosition(coin.x, coin.y);
                 });
 
-                if (this.player.x > this.bandeiraX - 30 && !this.isWin) {
+                // Chegou na bandeira?
+                if (this.player.y < this.bandeiraY - 20 && !this.isWin) {
                     this.isWin = true;
                     this.physics.pause();
                     this.player.setVelocity(0);
@@ -602,31 +538,41 @@
                 bg.fillGradientStyle(0x1a1a2e, 0x1a1a2e, 0x16213e, 0x16213e, 1);
                 bg.fillRect(0, 0, width, height);
 
-                this.add.image(width/2, height * 0.4, 'arthur_parado').setScale(3);
+                this.add.image(width/2, height * 0.42, 'arthur_parado').setScale(3);
                 const moldura = this.add.graphics();
                 moldura.lineStyle(8, 0xffd700, 1);
-                moldura.strokeCircle(width/2, height * 0.4, 100);
+                moldura.strokeCircle(width/2, height * 0.42, 100);
 
-                const titulo = this.add.text(width/2, height * 0.15, '🎉 FELIZ ANIVERSÁRIO', {
-                    fontFamily: 'monospace', fontSize: '32px', fill: '#ffd700',
-                    stroke: '#000000', strokeThickness: 6, align: 'center'
+                const titulo = this.add.text(width/2, height * 0.1, '🎉 FELIZ', {
+                    fontFamily: 'monospace', fontSize: '26px', fill: '#ffd700',
+                    stroke: '#000000', strokeThickness: 6
                 }).setOrigin(0.5);
 
-                const subtitulo = this.add.text(width/2, height * 0.25, 'ARTHUR!!! 🎉', {
-                    fontFamily: 'monospace', fontSize: '44px', fill: '#ff6b6b',
-                    stroke: '#000000', strokeThickness: 6, align: 'center'
+                const titulo2 = this.add.text(width/2, height * 0.16, 'ANIVERSÁRIO', {
+                    fontFamily: 'monospace', fontSize: '26px', fill: '#ffd700',
+                    stroke: '#000000', strokeThickness: 6
                 }).setOrigin(0.5);
 
-                this.tweens.add({ targets: [titulo, subtitulo], scale: 1.1, duration: 600, yoyo: true, repeat: -1 });
+                const subtitulo = this.add.text(width/2, height * 0.24, 'ARTHUR!!! 🎉', {
+                    fontFamily: 'monospace', fontSize: '32px', fill: '#ff6b6b',
+                    stroke: '#000000', strokeThickness: 6
+                }).setOrigin(0.5);
 
-                this.add.text(width/2, height * 0.62, `PONTOS: ${this.finalScore}  •  🪙 ${this.finalCoins}`, {
+                this.tweens.add({ targets: [titulo, titulo2, subtitulo], scale: 1.1, duration: 600, yoyo: true, repeat: -1 });
+
+                this.add.text(width/2, height * 0.64, `PONTOS: ${this.finalScore}`, {
                     fontFamily: 'monospace', fontSize: '20px', fill: '#ffffff',
                     stroke: '#000000', strokeThickness: 4
                 }).setOrigin(0.5);
 
-                const btnRestart = this.add.text(width/2, height * 0.85, '🔁 JOGAR NOVAMENTE', {
-                    fontFamily: 'monospace', fontSize: '24px', fill: '#ffffff',
-                    backgroundColor: '#e24a4a', padding: { x: 25, y: 15 }
+                this.add.text(width/2, height * 0.69, `🪙 ${this.finalCoins} moedas`, {
+                    fontFamily: 'monospace', fontSize: '18px', fill: '#ffd700',
+                    stroke: '#000000', strokeThickness: 4
+                }).setOrigin(0.5);
+
+                const btnRestart = this.add.text(width/2, height * 0.84, '🔁 JOGAR NOVAMENTE', {
+                    fontFamily: 'monospace', fontSize: '20px', fill: '#ffffff',
+                    backgroundColor: '#e24a4a', padding: { x: 22, y: 15 }
                 }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
                 btnRestart.on('pointerdown', () => { this.scene.start('MenuScene'); });
@@ -649,17 +595,17 @@
             criarBaloes(width, height) {
                 const cores = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0xa8e6cf, 0xff8b94];
                 for (let i = 0; i < 8; i++) {
-                    const x = Phaser.Math.Between(50, width - 50);
+                    const x = Phaser.Math.Between(40, width - 40);
                     const cor = cores[Phaser.Math.Between(0, cores.length - 1)];
-                    const balao = this.add.circle(x, height + 50, 20, cor);
-                    balao.setAlpha(0.8);
+                    const balao = this.add.circle(x, height + 50, 18, cor);
+                    balao.setAlpha(0.85);
                     this.tweens.add({ targets: balao, y: -100, duration: Phaser.Math.Between(4000, 8000), repeat: -1, delay: Phaser.Math.Between(0, 3000) });
                 }
             }
         }
 
         // ==========================================
-        // CONFIG FINAL
+        // CONFIG FINAL (Retrato)
         // ==========================================
         const config = {
             type: Phaser.CANVAS,
@@ -672,9 +618,9 @@
             disableContextMenu: true,
             input: { activePointers: 4 },
             scale: {
-                mode: Phaser.Scale.ENVELOP,
+                mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.CENTER_BOTH,
-                orientation: Phaser.Scale.LANDSCAPE
+                orientation: Phaser.Scale.PORTRAIT
             },
             physics: {
                 default: 'arcade',
@@ -692,22 +638,6 @@
                 box.innerText = '❌ ERRO: ' + e.message;
             }
         });
-
-        // ==========================================
-        // ORIENTAÇÃO (faixa fina no topo)
-        // ==========================================
-        function checkOrientation() {
-            const overlay = document.getElementById('rotate-overlay');
-            const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            if (isTouchDevice && window.innerHeight > window.innerWidth) {
-                overlay.style.display = 'flex';
-            } else {
-                overlay.style.display = 'none';
-            }
-        }
-        window.addEventListener('resize', checkOrientation);
-        window.addEventListener('orientationchange', () => { setTimeout(checkOrientation, 200); });
-        checkOrientation();
 
         document.addEventListener('gesturestart', (e) => e.preventDefault());
         document.addEventListener('contextmenu', (e) => e.preventDefault());
