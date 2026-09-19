@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>Aniversário do Arthur</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-        html, body { background: #000; overflow: hidden; font-family: 'Press Start 2P', cursive; touch-action: none; width: 100vw; height: 100dvh; }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+        html, body { background: #000; overflow: hidden; width: 100vw; height: 100dvh; height: 100vh; touch-action: none; overscroll-behavior: none; }
         #game-container { width: 100%; height: 100%; position: relative; }
-        #rotate-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a2e; color: #fff; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; text-align: center; padding: 20px; }
+        #game-container canvas { display: block; width: 100% !important; height: 100% !important; }
+        #rotate-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a2e; color: #fff; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; text-align: center; padding: 20px; font-family: monospace; }
         #rotate-overlay .icon { font-size: 60px; margin-bottom: 20px; animation: spin 2s linear infinite; }
         @keyframes spin { 100% { transform: rotate(90deg); } }
-        #rotate-overlay p { font-size: 14px; line-height: 1.5; }
-        #error-box { position: fixed; bottom: 10px; left: 10px; right: 10px; background: #ff0000; color: #fff; padding: 10px; font-family: monospace; font-size: 12px; z-index: 99999; display: none; word-break: break-all; }
+        #rotate-overlay p { font-size: 16px; line-height: 1.5; }
+        #error-box { position: fixed; bottom: 0; left: 0; right: 0; background: #ff0000; color: #fff; padding: 15px; font-family: monospace; font-size: 14px; z-index: 99999; display: none; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -25,7 +25,6 @@
     <div id="error-box"></div>
 
     <script>
-        // Captura QUALQUER erro e mostra na tela
         window.onerror = function(msg, url, line) {
             const box = document.getElementById('error-box');
             box.style.display = 'block';
@@ -39,35 +38,28 @@
         const GAME_HEIGHT = 540;
 
         // ==========================================
-        // BOOT SCENE - Carrega as fotos
+        // BOOT SCENE
         // ==========================================
         class BootScene extends Phaser.Scene {
             constructor() { super('BootScene'); }
-
             preload() {
                 const width = this.cameras.main.width;
                 const height = this.cameras.main.height;
-
-                // Mostra texto de carregamento
                 this.add.text(width/2, height/2, 'CARREGANDO...', {
-                    fontFamily: 'monospace', fontSize: '20px', fill: '#ffffff'
+                    fontFamily: 'monospace', fontSize: '24px', fill: '#ffffff'
                 }).setOrigin(0.5);
 
-                // Carrega as fotos
                 this.load.image('foto_parado', 'foto-parado.jpeg');
                 this.load.image('foto_andando', 'foto-andando.jpeg');
                 this.load.image('foto_pulando', 'foto-pulando.jpeg');
 
-                // Debug: avisa se alguma foto falhar
                 this.load.on('loaderror', (file) => {
                     const box = document.getElementById('error-box');
                     box.style.display = 'block';
                     box.innerText = '❌ FOTO NÃO ENCONTRADA: ' + file.src;
                 });
             }
-
             create() {
-                // Tenta processar as fotos, se der erro mostra na tela
                 try {
                     this.criarTexturaCircular('foto_parado', 'arthur_parado');
                     this.criarTexturaCircular('foto_andando', 'arthur_andando');
@@ -76,10 +68,9 @@
                 } catch (e) {
                     const box = document.getElementById('error-box');
                     box.style.display = 'block';
-                    box.innerText = '❌ ERRO ao processar fotos: ' + e.message;
+                    box.innerText = '❌ ERRO: ' + e.message;
                 }
             }
-
             criarTexturaCircular(keyOriginal, keyNova) {
                 if (!this.textures.exists(keyOriginal)) {
                     throw new Error('Textura não existe: ' + keyOriginal);
@@ -146,10 +137,7 @@
 
                 this.tweens.add({ targets: btnStart, scale: 1.1, duration: 500, yoyo: true, repeat: -1 });
 
-                btnStart.on('pointerdown', () => {
-                    console.log('Botão COMEÇAR clicado!');
-                    this.scene.start('GameScene');
-                });
+                btnStart.on('pointerdown', () => { this.scene.start('GameScene'); });
 
                 this.add.text(width/2, height * 0.93, '◀ ▶ para andar  •  ⬆ para pular', {
                     fontFamily: 'monospace', fontSize: '14px', fill: '#ffffff',
@@ -211,62 +199,114 @@
             }
 
             criarCenario(width, height) {
+                // Céu com gradiente (mais bonito)
+                const sky = this.add.graphics();
+                sky.fillGradientStyle(0x5c94fc, 0x5c94fc, 0x9fd3ff, 0x9fd3ff, 1);
+                sky.fillRect(0, 0, width * 2, height);
+
+                // Chão bem definido (2 faixas)
                 const ground = this.add.graphics();
+                // Faixa superior (grama)
+                ground.fillStyle(0x4ade80, 1);
+                ground.fillRect(0, height - 80, width * 2, 20);
+                // Faixa inferior (terra)
                 ground.fillStyle(0x8B4513, 1);
-                ground.fillRect(0, height - 40, width * 2, 40);
-                for (let i = 0; i < width * 2; i += 40) {
-                    ground.fillStyle(0x654321, 1);
-                    ground.fillRect(i, height - 40, 20, 40);
+                ground.fillRect(0, height - 60, width * 2, 60);
+                // Textura de tijolos na terra
+                ground.lineStyle(2, 0x654321);
+                for (let x = 0; x < width * 2; x += 40) {
+                    ground.strokeRect(x, height - 60, 40, 30);
+                    ground.strokeRect(x + 20, height - 30, 40, 30);
                 }
-                for (let i = 0; i < 10; i++) {
-                    const cloudX = Phaser.Math.Between(0, width * 2);
-                    const cloudY = Phaser.Math.Between(50, 200);
-                    this.add.circle(cloudX, cloudY, 30, 0xffffff, 0.8);
-                    this.add.circle(cloudX + 35, cloudY - 10, 40, 0xffffff, 0.8);
-                    this.add.circle(cloudX + 70, cloudY, 30, 0xffffff, 0.8);
-                }
+
+                // Nuvens organizadas em fileira
                 for (let i = 0; i < 8; i++) {
-                    const bushX = Phaser.Math.Between(100, width * 2 - 100);
-                    const bush = this.add.graphics();
-                    bush.fillStyle(0x228B22, 1);
-                    bush.fillCircle(bushX, height - 60, 30);
-                    bush.fillCircle(bushX + 30, height - 70, 35);
-                    bush.fillCircle(bushX + 60, height - 60, 30);
+                    const cloudX = 100 + i * 280;
+                    const cloudY = 80 + (i % 2) * 40;
+                    this.desenharNuvem(cloudX, cloudY);
                 }
-            }
 
-            criarPlataformas(width, height) {
-                const ground = this.platforms.create(width, height - 20, null).setVisible(false);
-                ground.body.setSize(width * 2, 40);
-                ground.setPosition(width, height - 20);
-
-                const posicoes = [
-                    { x: 300, y: height - 150 }, { x: 500, y: height - 220 },
-                    { x: 700, y: height - 150 }, { x: 900, y: height - 280 },
-                    { x: 1100, y: height - 180 }, { x: 1300, y: height - 250 },
-                    { x: 1500, y: height - 150 }
-                ];
-                posicoes.forEach(pos => {
-                    const plat = this.platforms.create(pos.x, pos.y, null).setVisible(false);
-                    plat.body.setSize(120, 30);
-                    plat.setPosition(pos.x, pos.y);
-                    const g = this.add.graphics();
-                    g.fillStyle(0x8B4513, 1);
-                    g.fillRect(pos.x - 60, pos.y - 15, 120, 30);
-                    g.fillStyle(0xA0522D, 1);
-                    g.fillRect(pos.x - 60, pos.y - 15, 120, 10);
-                    g.lineStyle(2, 0x654321);
-                    for (let i = -60; i < 60; i += 30) {
-                        g.strokeRect(pos.x + i, pos.y - 15, 30, 15);
+                // Arbustos no chão (só nas bordas das plataformas)
+                const posicoesArbustos = [150, 450, 750, 1050, 1350, 1650];
+                posicoesArbustos.forEach(x => {
+                    if (x < width * 2 - 100) {
+                        this.desenharArbusto(x, height - 80);
                     }
                 });
             }
 
+            desenharNuvem(x, y) {
+                const g = this.add.graphics();
+                g.fillStyle(0xffffff, 0.9);
+                g.fillCircle(x, y, 25);
+                g.fillCircle(x + 30, y - 10, 35);
+                g.fillCircle(x + 65, y, 25);
+                g.fillStyle(0xffffff, 1);
+                g.fillCircle(x + 15, y + 5, 20);
+                g.fillCircle(x + 50, y + 5, 20);
+            }
+
+            desenharArbusto(x, y) {
+                const g = this.add.graphics();
+                g.fillStyle(0x228B22, 1);
+                g.fillCircle(x, y, 25);
+                g.fillCircle(x + 25, y - 15, 30);
+                g.fillCircle(x + 50, y, 25);
+                g.fillStyle(0x2e7d32, 1);
+                g.fillCircle(x + 25, y + 5, 20);
+            }
+
+            criarPlataformas(width, height) {
+                // Chão
+                const ground = this.platforms.create(width, height - 20, null).setVisible(false);
+                ground.body.setSize(width * 2, 40);
+                ground.setPosition(width, height - 20);
+
+                // Plataformas bem espaçadas, alcançáveis com o pulo novo
+                const posicoes = [
+                    { x: 350, y: height - 180 },
+                    { x: 600, y: height - 260 },
+                    { x: 850, y: height - 180 },
+                    { x: 1100, y: height - 300 },
+                    { x: 1350, y: height - 220 },
+                    { x: 1600, y: height - 180 }
+                ];
+
+                posicoes.forEach(pos => {
+                    const plat = this.platforms.create(pos.x, pos.y, null).setVisible(false);
+                    plat.body.setSize(140, 30);
+                    plat.setPosition(pos.x, pos.y);
+                    this.desenharPlataforma(pos.x, pos.y);
+                });
+            }
+
+            desenharPlataforma(x, y) {
+                const g = this.add.graphics();
+                // Base marrom
+                g.fillStyle(0x8B4513, 1);
+                g.fillRect(x - 70, y - 15, 140, 30);
+                // Topo verde (grama)
+                g.fillStyle(0x4ade80, 1);
+                g.fillRect(x - 70, y - 15, 140, 8);
+                // Tijolos
+                g.lineStyle(2, 0x654321);
+                for (let i = -70; i < 70; i += 35) {
+                    g.strokeRect(x + i, y - 7, 35, 22);
+                }
+                // Borda superior
+                g.lineStyle(2, 0x2e7d32);
+                g.strokeRect(x - 70, y - 15, 140, 8);
+            }
+
             criarMoedas() {
+                // Moedas acima das plataformas
                 const posicoesMoedas = [
-                    { x: 300, y: 300 }, { x: 350, y: 300 }, { x: 500, y: 230 }, { x: 550, y: 230 },
-                    { x: 700, y: 300 }, { x: 900, y: 170 }, { x: 950, y: 170 }, { x: 1100, y: 270 },
-                    { x: 1300, y: 200 }, { x: 1350, y: 200 }, { x: 1500, y: 300 }
+                    { x: 350, y: 300 }, { x: 380, y: 300 },
+                    { x: 600, y: 230 }, { x: 630, y: 230 },
+                    { x: 850, y: 300 },
+                    { x: 1100, y: 180 }, { x: 1130, y: 180 },
+                    { x: 1350, y: 260 },
+                    { x: 1600, y: 300 }
                 ];
                 posicoesMoedas.forEach(pos => {
                     const coin = this.coins.create(pos.x, pos.y, null).setVisible(false);
@@ -280,7 +320,6 @@
                     g.fillStyle(0xffd700, 1);
                     g.fillCircle(pos.x, pos.y, 4);
                     coin.graphics = g;
-                    this.tweens.add({ targets: g, scaleX: 0.3, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
                 });
             }
 
@@ -316,7 +355,7 @@
             }
 
             criarBandeira(width) {
-                this.bandeiraX = width * 2 - 150;
+                this.bandeiraX = width * 2 - 200;
                 this.bandeiraY = 400;
                 const g = this.add.graphics();
                 g.fillStyle(0xcccccc, 1);
@@ -330,29 +369,68 @@
             criarControlesTateis() {
                 const width = this.cameras.main.width;
                 const height = this.cameras.main.height;
-                const btnSize = 85;
-                const margin = 20;
+                const btnSize = 90;
+                const margin = 15;
 
-                this.btnLeft = this.add.circle(margin + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.3).setInteractive().setScrollFactor(0).setDepth(100);
-                this.add.text(margin + btnSize/2, height - margin - btnSize/2, '◀', { fontFamily: 'monospace', fontSize: '36px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                // IMPORTANTE: usar setInteractive com 'useHandCursor' e eventos 'pointerdown/up'
+                // Multi-touch: cada botão tem seu próprio estado
 
-                this.btnRight = this.add.circle(margin + btnSize + 15 + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.3).setInteractive().setScrollFactor(0).setDepth(100);
-                this.add.text(margin + btnSize + 15 + btnSize/2, height - margin - btnSize/2, '▶', { fontFamily: 'monospace', fontSize: '36px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                this.btnLeft = this.add.circle(margin + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.3).setScrollFactor(0).setDepth(100);
+                this.btnLeft.setInteractive({ useHandCursor: true });
+                this.add.text(margin + btnSize/2, height - margin - btnSize/2, '◀', { fontFamily: 'monospace', fontSize: '40px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
 
-                this.btnJump = this.add.circle(width - margin - btnSize/2, height - margin - btnSize/2, btnSize/2 + 10, 0xffd700, 0.4).setInteractive().setScrollFactor(0).setDepth(100);
-                this.add.text(width - margin - btnSize/2, height - margin - btnSize/2, '⬆', { fontFamily: 'monospace', fontSize: '44px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                this.btnRight = this.add.circle(margin + btnSize + 10 + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.3).setScrollFactor(0).setDepth(100);
+                this.btnRight.setInteractive({ useHandCursor: true });
+                this.add.text(margin + btnSize + 10 + btnSize/2, height - margin - btnSize/2, '▶', { fontFamily: 'monospace', fontSize: '40px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
 
-                this.btnLeft.on('pointerdown', () => { this.moveLeft = true; this.btnLeft.setFillStyle(0xffffff, 0.6); });
-                this.btnLeft.on('pointerup', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.3); });
-                this.btnLeft.on('pointerout', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.3); });
+                this.btnJump = this.add.circle(width - margin - btnSize/2, height - margin - btnSize/2, btnSize/2 + 10, 0xffd700, 0.4).setScrollFactor(0).setDepth(100);
+                this.btnJump.setInteractive({ useHandCursor: true });
+                this.add.text(width - margin - btnSize/2, height - margin - btnSize/2, '⬆', { fontFamily: 'monospace', fontSize: '48px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
 
-                this.btnRight.on('pointerdown', () => { this.moveRight = true; this.btnRight.setFillStyle(0xffffff, 0.6); });
-                this.btnRight.on('pointerup', () => { this.moveRight = false; this.btnRight.setFillStyle(0xffffff, 0.3); });
-                this.btnRight.on('pointerout', () => { this.moveRight = false; this.btnRight.setFillStyle(0xffffff, 0.3); });
+                // Multi-touch: cada botão tem seu próprio listener
+                // O input do Phaser já suporta multi-touch por padrão em mobile
 
-                this.btnJump.on('pointerdown', () => { this.jump = true; this.btnJump.setFillStyle(0xffd700, 0.7); });
-                this.btnJump.on('pointerup', () => { this.jump = false; this.btnJump.setFillStyle(0xffd700, 0.4); });
-                this.btnJump.on('pointerout', () => { this.jump = false; this.btnJump.setFillStyle(0xffd700, 0.4); });
+                this.btnLeft.on('pointerdown', (pointer) => {
+                    this.moveLeft = true;
+                    this.btnLeft.setFillStyle(0xffffff, 0.6);
+                });
+                this.btnLeft.on('pointerup', () => {
+                    this.moveLeft = false;
+                    this.btnLeft.setFillStyle(0xffffff, 0.3);
+                });
+                this.btnLeft.on('pointerout', () => {
+                    this.moveLeft = false;
+                    this.btnLeft.setFillStyle(0xffffff, 0.3);
+                });
+
+                this.btnRight.on('pointerdown', (pointer) => {
+                    this.moveRight = true;
+                    this.btnRight.setFillStyle(0xffffff, 0.6);
+                });
+                this.btnRight.on('pointerup', () => {
+                    this.moveRight = false;
+                    this.btnRight.setFillStyle(0xffffff, 0.3);
+                });
+                this.btnRight.on('pointerout', () => {
+                    this.moveRight = false;
+                    this.btnRight.setFillStyle(0xffffff, 0.3);
+                });
+
+                this.btnJump.on('pointerdown', (pointer) => {
+                    this.jump = true;
+                    this.btnJump.setFillStyle(0xffd700, 0.7);
+                });
+                this.btnJump.on('pointerup', () => {
+                    this.jump = false;
+                    this.btnJump.setFillStyle(0xffd700, 0.4);
+                });
+                this.btnJump.on('pointerout', () => {
+                    this.jump = false;
+                    this.btnJump.setFillStyle(0xffd700, 0.4);
+                });
+
+                // Ativa multi-touch explicitamente
+                this.input.addPointer(3); // até 4 toques simultâneos
             }
 
             criarHUD() {
@@ -395,27 +473,36 @@
                 if (this.isGameOver || this.isWin) return;
 
                 const speed = 220;
-                const jumpForce = -500;
+                // ==================================================
+                // PULO MAIS ALTO (antes era -500, agora -720)
+                // ==================================================
+                const jumpForce = -720;
 
                 if (this.moveLeft || this.cursors.left.isDown) {
                     this.player.setVelocityX(-speed);
-                    this.player.setTexture('arthur_andando');
                     this.player.setFlipX(true);
                 } else if (this.moveRight || this.cursors.right.isDown) {
                     this.player.setVelocityX(speed);
-                    this.player.setTexture('arthur_andando');
                     this.player.setFlipX(false);
                 } else {
                     this.player.setVelocityX(0);
-                    this.player.setTexture('arthur_parado');
                 }
 
+                // ==================================================
+                // MULTI-TOUCH: andar e pular ao mesmo tempo funciona
+                // porque moveLeft/moveRight e jump são variáveis independentes
+                // ==================================================
                 if ((this.jump || this.cursors.up.isDown || this.spaceKey.isDown) && this.player.body.touching.down) {
                     this.player.setVelocityY(jumpForce);
                 }
 
+                // Troca de sprite (andando / pulando / parado)
                 if (!this.player.body.touching.down) {
                     this.player.setTexture('arthur_pulando');
+                } else if (this.moveLeft || this.moveRight || this.cursors.left.isDown || this.cursors.right.isDown) {
+                    this.player.setTexture('arthur_andando');
+                } else {
+                    this.player.setTexture('arthur_parado');
                 }
 
                 this.enemies.children.iterate(enemy => {
@@ -484,12 +571,10 @@
                     backgroundColor: '#e24a4a', padding: { x: 25, y: 15 }
                 }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-                this.tweens.add({ targets: btnRestart, scale: 1.05, duration: 800, yoyo: true, repeat: -1 });
                 btnRestart.on('pointerdown', () => { this.scene.start('MenuScene'); });
 
                 this.criarConfetes(width, height);
                 this.criarBaloes(width, height);
-                this.criarFogos(width, height);
             }
 
             criarConfetes(width, height) {
@@ -499,8 +584,7 @@
                     const y = Phaser.Math.Between(-height, 0);
                     const cor = cores[Phaser.Math.Between(0, cores.length - 1)];
                     const confete = this.add.rectangle(x, y, 8, 8, cor);
-                    confete.setAngle(Phaser.Math.Between(0, 360));
-                    this.tweens.add({ targets: confete, y: height + 20, angle: confete.angle + 720, duration: Phaser.Math.Between(3000, 6000), repeat: -1, delay: Phaser.Math.Between(0, 2000) });
+                    this.tweens.add({ targets: confete, y: height + 20, duration: Phaser.Math.Between(3000, 6000), repeat: -1, delay: Phaser.Math.Between(0, 2000) });
                 }
             }
 
@@ -514,32 +598,23 @@
                     this.tweens.add({ targets: balao, y: -100, duration: Phaser.Math.Between(4000, 8000), repeat: -1, delay: Phaser.Math.Between(0, 3000) });
                 }
             }
-
-            criarFogos(width, height) {
-                const criarFogo = () => {
-                    const x = Phaser.Math.Between(100, width - 100);
-                    const y = Phaser.Math.Between(50, height / 2);
-                    const cores = [0xffd700, 0xff6b6b, 0x4ecdc4, 0xffffff];
-                    const cor = cores[Phaser.Math.Between(0, cores.length - 1)];
-                    for (let i = 0; i < 12; i++) {
-                        const angle = (Math.PI * 2 / 12) * i;
-                        const particle = this.add.rectangle(x, y, 4, 4, cor);
-                        this.tweens.add({ targets: particle, x: x + Math.cos(angle) * 80, y: y + Math.sin(angle) * 80, alpha: 0, duration: 1000, onComplete: () => particle.destroy() });
-                    }
-                };
-                this.time.addEvent({ delay: 1500, callback: criarFogo, loop: true });
-            }
         }
 
         // ==========================================
-        // CONFIG + INÍCIO
+        // CONFIG FINAL — CANVAS (compatível com todos navegadores)
         // ==========================================
         const config = {
-            type: Phaser.AUTO,
+            type: Phaser.CANVAS,
             width: GAME_WIDTH,
             height: GAME_HEIGHT,
             parent: 'game-container',
             backgroundColor: '#5c94fc',
+            pixelArt: false,
+            roundPixels: true,
+            disableContextMenu: true,
+            input: {
+                activePointers: 4  // ← Multi-touch: até 4 dedos ao mesmo tempo
+            },
             scale: {
                 mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -552,14 +627,21 @@
             scene: [BootScene, MenuScene, GameScene, WinScene]
         };
 
-        const game = new Phaser.Game(config);
+        window.addEventListener('load', () => {
+            try {
+                const game = new Phaser.Game(config);
+            } catch (e) {
+                const box = document.getElementById('error-box');
+                box.style.display = 'block';
+                box.innerText = '❌ ERRO ao criar Phaser: ' + e.message;
+            }
+        });
 
         // ==========================================
         // ORIENTAÇÃO
         // ==========================================
         function checkOrientation() {
             const overlay = document.getElementById('rotate-overlay');
-            // Só mostra se for celular/tablet em modo retrato
             const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             if (isTouchDevice && window.innerHeight > window.innerWidth) {
                 overlay.style.display = 'flex';
@@ -568,7 +650,7 @@
             }
         }
         window.addEventListener('resize', checkOrientation);
-        window.addEventListener('orientationchange', () => { setTimeout(checkOrientation, 100); });
+        window.addEventListener('orientationchange', () => { setTimeout(checkOrientation, 200); });
         checkOrientation();
 
         document.addEventListener('gesturestart', (e) => e.preventDefault());
