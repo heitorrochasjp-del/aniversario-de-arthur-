@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>Aniversário do Arthur</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+        body { background: #000; overflow: hidden; font-family: 'Press Start 2P', cursive; touch-action: none; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; }
+        #game-container { width: 100%; height: 100%; position: relative; }
+        #rotate-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a2e; color: #fff; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; text-align: center; padding: 20px; }
+        #rotate-overlay .icon { font-size: 60px; margin-bottom: 20px; animation: spin 2s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(90deg); } }
+        #rotate-overlay p { font-size: 14px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div id="rotate-overlay">
+        <div class="icon">🔄</div>
+        <p>Vire o celular na horizontal<br>para jogar!</p>
+    </div>
+    <div id="game-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO DO JOGO
+        // ==========================================
+        const GAME_WIDTH = 960;
+        const GAME_HEIGHT = 540;
+
+        const config = {
+            type: Phaser.AUTO,
+            width: GAME_WIDTH,
+            height: GAME_HEIGHT,
+            parent: 'game-container',
+            backgroundColor: '#5c94fc',
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH,
+                orientation: Phaser.Scale.LANDSCAPE
+            },
+            physics: {
+                default: 'arcade',
+                arcade: { gravity: { y: 1200 }, debug: false }
+            },
+            scene: [BootScene, MenuScene, GameScene, WinScene]
+        };
+
+        const game = new Phaser.Game(config);
+
+        // ==========================================
+        // CENA DE BOOT
+        // ==========================================
+        class BootScene extends Phaser.Scene {
+            constructor() { super('BootScene'); }
+            preload() {
+                // Carrega as fotos (arquivos .jpeg no mesmo repositório)
+                this.load.image('foto_parado', 'foto-parado.jpeg');
+                this.load.image('foto_andando', 'foto-andando.jpeg');
+                this.load.image('foto_pulando', 'foto-pulando.jpeg');
+
+                const width = this.cameras.main.width;
+                const height = this.cameras.main.height;
+                const progressBar = this.add.graphics();
+                const progressBox = this.add.graphics();
+                progressBox.fillStyle(0x222222, 0.8);
+                progressBox.fillRect(width/2 - 160, height/2 - 25, 320, 50);
+                this.add.text(width/2, height/2 - 50, 'CARREGANDO...', {
+                    fontFamily: 'Press Start 2P', fontSize: '14px', fill: '#ffffff'
+                }).setOrigin(0.5);
+                this.load.on('progress', (value) => {
+                    progressBar.clear();
+                    progressBar.fillStyle(0xffffff, 1);
+                    progressBar.fillRect(width/2 - 150, height/2 - 15, 300 * value, 30);
+                });
+            }
+            create() {
+                this.criarTexturaCircular('foto_parado', 'arthur_parado');
+                this.criarTexturaCircular('foto_andando', 'arthur_andando');
+                this.criarTexturaCircular('foto_pulando', 'arthur_pulando');
+                this.scene.start('MenuScene');
+            }
+            criarTexturaCircular(keyOriginal, keyNova) {
+                const img = this.textures.get(keyOriginal).getSourceImage();
+                const size = 64;
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 16;
+                tempCanvas.height = 16;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(img, 0, 0, 16, 16);
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+                ctx.drawImage(tempCanvas, 0, 0, size, size);
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(size/2, size/2, size/2 - 2, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+                this.textures.addCanvas(keyNova, canvas);
+            }
+        }
+
+        // ==========================================
+        // CENA DE MENU
+        // ==========================================
+        class MenuScene extends Phaser.Scene {
+            constructor() { super('MenuScene'); }
+            create() {
+                const width = this.cameras.main.width;
+                const height = this.cameras.main.height;
+                const bg = this.add.graphics();
+                bg.fillGradientStyle(0x5c94fc, 0x5c94fc, 0x87ceeb, 0x87ceeb, 1);
+                bg.fillRect(0, 0, width, height);
+                this.add.image(100, 80, 'arthur_parado').setScale(0.5).setAlpha(0.3);
+                this.add.image(800, 120, 'arthur_andando').setScale(0.5).setAlpha(0.3);
+                this.add.text(width/2, height * 0.2, 'ANIVERSÁRIO DO', {
+                    fontFamily: 'Press Start 2P', fontSize: '20px', fill: '#ffffff',
+                    stroke: '#000000', strokeThickness: 4
+                }).setOrigin(0.5);
+                this.add.text(width/2, height * 0.3, 'ARTHUR', {
+                    fontFamily: 'Press Start 2P', fontSize: '48px', fill: '#ffd700',
+                    stroke: '#000000', strokeThickness: 6
+                }).setOrigin(0.5);
+                const fotoMenu = this.add.image(width/2, height * 0.55, 'arthur_parado').setScale(2);
+                this.tweens.add({ targets: fotoMenu, y: height * 0.55 - 10, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                const btnStart = this.add.text(width/2, height * 0.8, '▶ COMEÇAR', {
+                    fontFamily: 'Press Start 2P', fontSize: '28px', fill: '#ffffff',
+                    backgroundColor: '#e24a4a', padding: { x: 20, y: 15 }
+                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                this.tweens.add({ targets: btnStart, scale: 1.1, duration: 500, yoyo: true, repeat: -1 });
+                btnStart.on('pointerdown', () => { this.scene.start('GameScene'); });
+                this.add.text(width/2, height * 0.92, '◀ ▶ para andar  •  ⬆ para pular', {
+                    fontFamily: 'Press Start 2P', fontSize: '12px', fill: '#ffffff',
+                    stroke: '#000000', strokeThickness: 3
+                }).setOrigin(0.5);
+            }
+        }
+
+        // ==========================================
+        // CENA PRINCIPAL DO JOGO
+        // ==========================================
+        class GameScene extends Phaser.Scene {
+            constructor() { super('GameScene'); }
+            create() {
+                const width = this.cameras.main.width;
+                const height = this.cameras.main.height;
+                this.score = 0;
+                this.coinsCollected = 0;
+                this.isGameOver = false;
+                this.isWin = false;
+                this.platforms = this.physics.add.staticGroup();
+                this.coins = this.physics.add.group();
+                this.enemies = this.physics.add.group();
+                this.criarCenario(width, height);
+                this.criarPlataformas(width, height);
+                this.criarMoedas();
+                this.criarInimigos();
+                this.player = this.physics.add.sprite(100, height - 150, 'arthur_parado');
+                this.player.setBounce(0.1);
+                this.player.setCollideWorldBounds(true);
+                this.player.setScale(1.2);
+                this.player.body.setSize(40, 40);
+                this.player.body.setOffset(12, 12);
+                this.physics.add.collider(this.player, this.platforms);
+                this.physics.add.collider(this.enemies, this.platforms);
+                this.physics.add.collider(this.coins, this.platforms);
+                this.physics.add.overlap(this.player, this.coins, this.coletarMoeda, null, this);
+                this.physics.add.overlap(this.player, this.enemies, this.atingirInimigo, null, this);
+                this.criarBandeira(width);
+                this.cameras.main.setBounds(0, 0, width * 2, height);
+                this.physics.world.setBounds(0, 0, width * 2, height);
+                this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+                this.criarControlesTateis();
+                this.cursors = this.input.keyboard.createCursorKeys();
+                this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+                this.criarHUD();
+                this.iniciarMusicaFundo();
+            }
+            criarCenario(width, height) {
+                const ground = this.add.graphics();
+                ground.fillStyle(0x8B4513, 1);
+                ground.fillRect(0, height - 40, width * 2, 40);
+                for (let i = 0; i < width * 2; i += 40) {
+                    ground.fillStyle(0x654321, 1);
+                    ground.fillRect(i, height - 40, 20, 40);
+                    ground.fillStyle(0x8B4513, 1);
+                    ground.fillRect(i + 20, height - 40, 20, 40);
+                }
+                for (let i = 0; i < 10; i++) {
+                    const cloudX = Phaser.Math.Between(0, width * 2);
+                    const cloudY = Phaser.Math.Between(50, 200);
+                    this.add.circle(cloudX, cloudY, 30, 0xffffff, 0.8);
+                    this.add.circle(cloudX + 35, cloudY - 10, 40, 0xffffff, 0.8);
+                    this.add.circle(cloudX + 70, cloudY, 30, 0xffffff, 0.8);
+                }
+                for (let i = 0; i < 8; i++) {
+                    const bushX = Phaser.Math.Between(100, width * 2 - 100);
+                    const bush = this.add.graphics();
+                    bush.fillStyle(0x228B22, 1);
+                    bush.fillCircle(bushX, height - 60, 30);
+                    bush.fillCircle(bushX + 30, height - 70, 35);
+                    bush.fillCircle(bushX + 60, height - 60, 30);
+                }
+            }
+            criarPlataformas(width, height) {
+                const ground = this.platforms.create(width, height - 20, null).setVisible(false);
+                ground.body.setSize(width * 2, 40);
+                ground.setPosition(width, height - 20);
+                const posicoes = [
+                    { x: 300, y: height - 150 }, { x: 500, y: height - 220 },
+                    { x: 700, y: height - 150 }, { x: 900, y: height - 280 },
+                    { x: 1100, y: height - 180 }, { x: 1300, y: height - 250 },
+                    { x: 1500, y: height - 150 }
+                ];
+                posicoes.forEach(pos => {
+                    const plat = this.platforms.create(pos.x, pos.y, null).setVisible(false);
+                    plat.body.setSize(120, 30);
+                    plat.setPosition(pos.x, pos.y);
+                    const g = this.add.graphics();
+                    g.fillStyle(0x8B4513, 1);
+                    g.fillRect(pos.x - 60, pos.y - 15, 120, 30);
+                    g.fillStyle(0xA0522D, 1);
+                    g.fillRect(pos.x - 60, pos.y - 15, 120, 10);
+                    g.lineStyle(2, 0x654321);
+                    for (let i = -60; i < 60; i += 30) {
+                        g.strokeRect(pos.x + i, pos.y - 15, 30, 15);
+                        g.strokeRect(pos.x + i + 15, pos.y, 30, 15);
+                    }
+                });
+            }
+            criarMoedas() {
+                const posicoesMoedas = [
+                    { x: 300, y: 300 }, { x: 350, y: 300 }, { x: 500, y: 230 }, { x: 550, y: 230 },
+                    { x: 700, y: 300 }, { x: 900, y: 170 }, { x: 950, y: 170 }, { x: 1100, y: 270 },
+                    { x: 1300, y: 200 }, { x: 1350, y: 200 }, { x: 1500, y: 300 }
+                ];
+                posicoesMoedas.forEach(pos => {
+                    const coin = this.coins.create(pos.x, pos.y, null).setVisible(false);
+                    coin.body.setSize(30, 30);
+                    coin.setPosition(pos.x, pos.y);
+                    const g = this.add.graphics();
+                    g.fillStyle(0xffd700, 1);
+                    g.fillCircle(pos.x, pos.y, 12);
+                    g.fillStyle(0xffaa00, 1);
+                    g.fillCircle(pos.x, pos.y, 8);
+                    g.fillStyle(0xffd700, 1);
+                    g.fillCircle(pos.x, pos.y, 4);
+                    coin.graphics = g;
+                    this.tweens.add({ targets: g, scaleX: 0.3, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                });
+            }
+            criarInimigos() {
+                const posicoesInimigos = [
+                    { x: 400, y: 400, min: 300, max: 500 },
+                    { x: 800, y: 400, min: 700, max: 900 },
+                    { x: 1200, y: 400, min: 1100, max: 1300 }
+                ];
+                posicoesInimigos.forEach(pos => {
+                    const enemy = this.enemies.create(pos.x, pos.y, null).setVisible(false);
+                    enemy.body.setSize(35, 35);
+                    enemy.setPosition(pos.x, pos.y);
+                    enemy.setBounce(0);
+                    enemy.setCollideWorldBounds(true);
+                    enemy.minX = pos.min;
+                    enemy.maxX = pos.max;
+                    enemy.direction = 1;
+                    enemy.speed = 60;
+                    const g = this.add.graphics();
+                    g.fillStyle(0x8B4513, 1);
+                    g.fillRect(pos.x - 17, pos.y - 17, 35, 35);
+                    g.fillStyle(0x654321, 1);
+                    g.fillRect(pos.x - 15, pos.y - 15, 30, 30);
+                    g.fillStyle(0xffffff, 1);
+                    g.fillCircle(pos.x - 8, pos.y - 5, 6);
+                    g.fillCircle(pos.x + 8, pos.y - 5, 6);
+                    g.fillStyle(0x000000, 1);
+                    g.fillCircle(pos.x - 6, pos.y - 5, 3);
+                    g.fillCircle(pos.x + 10, pos.y - 5, 3);
+                    enemy.graphics = g;
+                });
+            }
+            criarBandeira(width) {
+                this.bandeiraX = width * 2 - 150;
+                this.bandeiraY = 400;
+                const g = this.add.graphics();
+                g.fillStyle(0xcccccc, 1);
+                g.fillRect(this.bandeiraX, this.bandeiraY - 150, 10, 150);
+                g.fillStyle(0xffd700, 1);
+                g.fillTriangle(this.bandeiraX + 10, this.bandeiraY - 150, this.bandeiraX + 10, this.bandeiraY - 100, this.bandeiraX + 80, this.bandeiraY - 125);
+                g.fillStyle(0xffffff, 1);
+                g.fillCircle(this.bandeiraX + 35, this.bandeiraY - 125, 8);
+                this.bandeira = this.add.zone(this.bandeiraX + 20, this.bandeiraY - 100, 60, 100);
+                this.physics.world.enable(this.bandeira);
+                this.bandeira.body.setAllowGravity(false);
+                this.bandeira.body.setImmovable(true);
+            }
+            criarControlesTateis() {
+                const width = this.cameras.main.width;
+                const height = this.cameras.main.height;
+                const btnSize = 85;
+                const margin = 20;
+                this.btnLeft = this.add.circle(margin + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.3).setInteractive().setScrollFactor(0).setDepth(100);
+                this.add.text(margin + btnSize/2, height - margin - btnSize/2, '◀', { fontFamily: 'Press Start 2P', fontSize: '30px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                this.btnRight = this.add.circle(margin + btnSize + 15 + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.3).setInteractive().setScrollFactor(0).setDepth(100);
+                this.add.text(margin + btnSize + 15 + btnSize/2, height - margin - btnSize/2, '▶', { fontFamily: 'Press Start 2P', fontSize: '30px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                this.btnJump = this.add.circle(width - margin - btnSize/2, height - margin - btnSize/2, btnSize/2 + 10, 0xffd700, 0.4).setInteractive().setScrollFactor(0).setDepth(100);
+                this.add.text(width - margin - btnSize/2, height - margin - btnSize/2, '⬆', { fontFamily: 'Press Start 2P', fontSize: '36px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+                this.btnLeft.on('pointerdown', () => { this.moveLeft = true; this.btnLeft.setFillStyle(0xffffff, 0.6); });
+                this.btnLeft.on('pointerup', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.3); });
+                this.btnLeft.on('pointerout', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.3); });
+                this.btnRight.on('pointerdown', () => { this.moveRight = true; this.btnRight.setFillStyle(0xffffff, 0.6); });
+                this.btnRight.on('pointerup', () => { this.moveRight = false; this.btnRight.setFillStyle(0xffffff, 0.3); });
+                this.btnRight.on('pointerout', () => { this.moveRight = false; this.btnRight.setFillStyle(0xffffff, 0.3); });
+                this.btnJump.on('pointerdown', () => { this.jump = true; this.btnJump.setFillStyle(0xffd700, 0.7); });
+                this.btnJump.on('pointerup', () => { this.jump = false; this.btnJump.setFillStyle(0xffd700, 0.4); });
+                this.btnJump.on('pointerout', () => { this.jump = false; this.btnJump.setFillStyle(0xffd700, 0.4); });
+                if (!this.sys.game.device.input.touch) {
+                    this.btnLeft.setVisible(false);
+                    this.btnRight.setVisible(false);
+                    this.btnJump.setVisible(false);
+                }
+            }
+            criarHUD() {
+                const width = this.cameras.main.width;
+                this.coinText = this.add.text(20, 20, '🪙 0', { fontFamily: 'Press Start 2P', fontSize: '18px', fill: '#ffd700', stroke: '#000000', strokeThickness: 4 }).setScrollFactor(0).setDepth(200);
+                this.scoreText = this.add.text(width - 20, 20, 'PONTOS: 0', { fontFamily: 'Press Start 2P', fontSize: '14px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(1, 0).setScrollFactor(0).setDepth(200);
+            }
+            coletarMoeda(player, coin) {
+                if (this.isGameOver || this.isWin) return;
+                coin.destroy();
+                if (coin.graphics) coin.graphics.destroy();
+                this.coinsCollected++;
+                this.score += 100;
+                this.coinText.setText('🪙 ' + this.coinsCollected);
+                this.scoreText.setText('PONTOS: ' + this.score);
+                this.tocarSom('coin');
+            }
+            atingirInimigo(player, enemy) {
+                if (this.isGameOver || this.isWin) return;
+                if (player.body.velocity.y > 0 && player.y < enemy.y - 20) {
+                    enemy.destroy();
+                    if (enemy.graphics) enemy.graphics.destroy();
+                    player.setVelocityY(-400);
+                    this.score += 200;
+                    this.scoreText.setText('PONTOS: ' + this.score);
+                    this.tocarSom('stomp');
+                } else {
+                    this.isGameOver = true;
+                    this.physics.pause();
+                    player.setTint(0xff0000);
+                    const width = this.cameras.main.width;
+                    const height = this.cameras.main.height;
+                    this.add.text(width/2, height/2, 'GAME OVER', { fontFamily: 'Press Start 2P', fontSize: '40px', fill: '#ff0000', stroke: '#000000', strokeThickness: 6 }).setOrigin(0.5).setScrollFactor(0).setDepth(300);
+                    const btnRestart = this.add.text(width/2, height/2 + 80, '🔄 TENTAR NOVAMENTE', { fontFamily: 'Press Start 2P', fontSize: '20px', fill: '#ffffff', backgroundColor: '#e24a4a', padding: { x: 15, y: 10 } }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive();
+                    btnRestart.on('pointerdown', () => { this.scene.restart(); });
+                }
+            }
+            iniciarMusicaFundo() {
+                if (this.sound.context) {
+                    const ctx = this.sound.context;
+                    const notes = [262, 294, 330, 349, 392, 440, 494, 523];
+                    let noteIndex = 0;
+                    const playNote = () => {
+                        if (this.isWin || this.isGameOver) return;
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.frequency.value = notes[noteIndex % notes.length];
+                        osc.type = 'square';
+                        gain.gain.setValueAtTime(0.02, ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+                        osc.start(ctx.currentTime);
+                        osc.stop(ctx.currentTime + 0.2);
+                        noteIndex++;
+                        setTimeout(playNote, 300);
+                    };
+                    this.input.once('pointerdown', () => { playNote(); });
+                }
+            }
+            tocarSom(tipo) {
+                if (!this.sound.context) return;
+                const ctx = this.sound.context;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                if (tipo === 'coin') {
+                    osc.frequency.value = 880;
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.1);
+                } else if (tipo === 'stomp') {
+                    osc.frequency.value = 220;
+                    osc.type = 'square';
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.15);
+                }
+            }
+            update() {
+                if (this.isGameOver || this.isWin) return;
+                const speed = 220;
+                const jumpForce = -500;
+                if (this.moveLeft || this.cursors.left.isDown) {
+                    this.player.setVelocityX(-speed);
+                    this.player.setTexture('arthur_andando');
+                    this.player.setFlipX(true);
+                } else if (this.moveRight || this.cursors.right.isDown) {
+                    this.player.setVelocityX(speed);
+                    this.player.setTexture('arthur_andando');
+                    this.player.setFlipX(false);
+                } else {
+                    this.player.setVelocityX(0);
+                    this.player.setTexture('arthur_parado');
+                }
+                if ((this.jump || this.cursors.up.isDown || this.spaceKey.isDown) && this.player.body.touching.down) {
+                    this.player.setVelocityY(jumpForce);
+                    this.tocarSom('stomp');
+                }
+                if (!this.player.body.touching.down) {
+                    this.player.setTexture('arthur_pulando');
+                }
+                this.enemies.children.iterate(enemy => {
+                    if (!enemy || !enemy.active) return;
+                    if (enemy.x <= enemy.minX) enemy.direction = 1;
+                    else if (enemy.x >= enemy.maxX) enemy.direction = -1;
+                    enemy.setVelocityX(enemy.speed * enemy.direction);
+                    if (enemy.graphics) enemy.graphics.setPosition(enemy.x - 17, enemy.y - 17);
+                });
+                this.coins.children.iterate(coin => {
+                    if (coin && coin.active && coin.graphics) coin.graphics.setPosition(coin.x, coin.y);
+                });
+                if (this.player.x > this.bandeiraX - 30 && !this.isWin) {
+                    this.isWin = true;
+                    this.physics.pause();
+                    this.player.setVelocity(0);
+                    this.tocarSom('coin');
+                    this.time.delayedCall(500, () => {
+                        this.scene.start('WinScene', { score: this.score, coins: this.coinsCollected });
+                    });
+                }
+            }
+        }
+
+        // ==========================================
+        // CENA DE VITÓRIA
+        // ==========================================
+        class WinScene extends Phaser.Scene {
+            constructor() { super('WinScene'); }
+            init(data) {
+                this.finalScore = data.score || 0;
+                this.finalCoins = data.coins || 0;
+            }
+            create() {
+                const width = this.cameras.main.width;
+                const height = this.cameras.main.height;
+                const bg = this.add.graphics();
+                bg.fillGradientStyle(0x1a1a2e, 0x1a1a2e, 0x16213e, 0x16213e, 1);
+                bg.fillRect(0, 0, width, height);
+                this.add.image(width/2, height * 0.4, 'arthur_parado').setScale(3);
+                const moldura = this.add.graphics();
+                moldura.lineStyle(8, 0xffd700, 1);
+                moldura.strokeCircle(width/2, height * 0.4, 100);
+                moldura.lineStyle(4, 0xffaa00, 1);
+                moldura.strokeCircle(width/2, height * 0.4, 110);
+                const titulo = this.add.text(width/2, height * 0.15, '🎉 FELIZ ANIVERSÁRIO', {
+                    fontFamily: 'Press Start 2P', fontSize: '28px', fill: '#ffd700',
+                    stroke: '#000000', strokeThickness: 6, align: 'center'
+                }).setOrigin(0.5);
+                const subtitulo = this.add.text(width/2, height * 0.25, 'ARTHUR!!! 🎉', {
+                    fontFamily: 'Press Start 2P', fontSize: '36px', fill: '#ff6b6b',
+                    stroke: '#000000', strokeThickness: 6, align: 'center'
+                }).setOrigin(0.5);
+                this.tweens.add({ targets: [titulo, subtitulo], scale: 1.1, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                this.add.text(width/2, height * 0.6, `PONTOS: ${this.finalScore}  •  🪙 ${this.finalCoins}`, {
+                    fontFamily: 'Press Start 2P', fontSize: '16px', fill: '#ffffff',
+                    stroke: '#000000', strokeThickness: 4
+                }).setOrigin(0.5);
+                const btnRestart = this.add.text(width/2, height * 0.85, '🔁 JOGAR NOVAMENTE', {
+                    fontFamily: 'Press Start 2P', fontSize: '20px', fill: '#ffffff',
+                    backgroundColor: '#e24a4a', padding: { x: 25, y: 15 }
+                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                this.tweens.add({ targets: btnRestart, scale: 1.05, duration: 800, yoyo: true, repeat: -1 });
+                btnRestart.on('pointerdown', () => { this.scene.start('MenuScene'); });
+                this.criarConfetes(width, height);
+                this.criarBaloes(width, height);
+                this.criarFogos(width, height);
+                this.tocarParabens();
+            }
+            criarConfetes(width, height) {
+                const cores = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0xa8e6cf, 0xff8b94, 0xb5e3d4];
+                for (let i = 0; i < 60; i++) {
+                    const x = Phaser.Math.Between(0, width);
+                    const y = Phaser.Math.Between(-height, 0);
+                    const cor = cores[Phaser.Math.Between(0, cores.length - 1)];
+                    const confete = this.add.rectangle(x, y, 8, 8, cor);
+                    confete.setAngle(Phaser.Math.Between(0, 360));
+                    this.tweens.add({ targets: confete, y: height + 20, angle: confete.angle + 720, duration: Phaser.Math.Between(3000, 6000), repeat: -1, delay: Phaser.Math.Between(0, 2000), ease: 'Linear' });
+                }
+            }
+            criarBaloes(width, height) {
+                const cores = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0xa8e6cf, 0xff8b94];
+                for (let i = 0; i < 8; i++) {
+                    const x = Phaser.Math.Between(50, width - 50);
+                    const cor = cores[Phaser.Math.Between(0, cores.length - 1)];
+                    const balao = this.add.circle(x, height + 50, 20, cor);
+                    balao.setAlpha(0.8);
+                    const linha = this.add.line(0, 0, x, height + 70, x, height + 100, 0xffffff, 0.5);
+                    this.tweens.add({ targets: [balao, linha], y: -100, duration: Phaser.Math.Between(4000, 8000), repeat: -1, delay: Phaser.Math.Between(0, 3000), ease: 'Sine.easeInOut' });
+                }
+            }
+            criarFogos(width, height) {
+                const criarFogo = () => {
+                    const x = Phaser.Math.Between(100, width - 100);
+                    const y = Phaser.Math.Between(50, height / 2);
+                    const cores = [0xffd700, 0xff6b6b, 0x4ecdc4, 0xffffff, 0xff8b94];
+                    const cor = cores[Phaser.Math.Between(0, cores.length - 1)];
+                    for (let i = 0; i < 12; i++) {
+                        const angle = (Math.PI * 2 / 12) * i;
+                        const particle = this.add.rectangle(x, y, 4, 4, cor);
+                        this.tweens.add({ targets: particle, x: x + Math.cos(angle) * 80, y: y + Math.sin(angle) * 80, alpha: 0, duration: 1000, ease: 'Power2', onComplete: () => particle.destroy() });
+                    }
+                };
+                this.time.addEvent({ delay: 1500, callback: criarFogo, loop: true });
+            }
+            tocarParabens() {
+                if (!this.sound.context) return;
+                const ctx = this.sound.context;
+                const melodia = [
+                    { nota: 264, dur: 0.3 }, { nota: 264, dur: 0.3 }, { nota: 297, dur: 0.6 }, { nota: 264, dur: 0.6 },
+                    { nota: 352, dur: 0.6 }, { nota: 330, dur: 0.6 }, { nota: 264, dur: 0.3 }, { nota: 264, dur: 0.3 },
+                    { nota: 297, dur: 0.6 }, { nota: 264, dur: 0.6 }, { nota: 396, dur: 0.6 }, { nota: 352, dur: 0.6 },
+                    { nota: 264, dur: 0.3 }, { nota: 264, dur: 0.3 }, { nota: 528, dur: 0.6 }, { nota: 440, dur: 0.6 },
+                    { nota: 352, dur: 0.6 }, { nota: 330, dur: 0.6 }, { nota: 297, dur: 0.6 }, { nota: 466, dur: 0.3 },
+                    { nota: 466, dur: 0.3 }, { nota: 440, dur: 0.6 }, { nota: 352, dur: 0.6 }, { nota: 396, dur: 0.6 },
+                    { nota: 352, dur: 0.6 }
+                ];
+                let tempo = 0;
+                melodia.forEach(item => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = item.nota;
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0, ctx.currentTime + tempo);
+                    gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + tempo + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + tempo + item.dur);
+                    osc.start(ctx.currentTime + tempo);
+                    osc.stop(ctx.currentTime + tempo + item.dur);
+                    tempo += item.dur * 0.8;
+                });
+            }
+        }
+
+        // ==========================================
+        // DETECÇÃO DE ORIENTAÇÃO
+        // ==========================================
+        function checkOrientation() {
+            const overlay = document.getElementById('rotate-overlay');
+            if (window.innerHeight > window.innerWidth) {
+                overlay.style.display = 'flex';
+            } else {
+                overlay.style.display = 'none';
+            }
+        }
+        window.addEventListener('resize', checkOrientation);
+        window.addEventListener('orientationchange', () => { setTimeout(checkOrientation, 100); });
+        checkOrientation();
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.closest('#game-container')) e.preventDefault();
+        }, { passive: false });
+    </script>
+</body>
+</html>
