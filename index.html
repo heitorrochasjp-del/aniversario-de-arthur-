@@ -158,9 +158,6 @@
                 this.moveLeft = false;
                 this.moveRight = false;
                 this.jump = false;
-                // ==========================================
-                // LAVA 3x MAIS LENTA (era 0.35, agora 0.12)
-                // ==========================================
                 this.lavaVelocidade = 0.12;
 
                 this.platforms = this.physics.add.staticGroup();
@@ -172,15 +169,13 @@
                 this.criarMoedas();
                 this.criarInimigos();
 
-                // Chão no fundo
-                const ground = this.platforms.create(width/2, height - 40, null).setVisible(false);
+                // Chão no fundo (topo em y = 900)
+                const ground = this.platforms.create(width/2, 920, null).setVisible(false);
                 ground.body.setSize(width, 40);
-                ground.setPosition(width/2, height - 40);
+                ground.setPosition(width/2, 920);
 
-                // ==========================================
-                // BONECO COMEÇA MAIS ALTO (era height - 100)
-                // ==========================================
-                this.player = this.physics.add.sprite(width/2, height - 250, 'arthur_parado');
+                // Arthur começa em cima do chão
+                this.player = this.physics.add.sprite(width * 0.5, 860, 'arthur_parado');
                 this.player.setBounce(0.1);
                 this.player.setCollideWorldBounds(true);
                 this.player.setScale(1.2);
@@ -219,10 +214,22 @@
                 sky.fillGradientStyle(0x5c94fc, 0x5c94fc, 0x9fd3ff, 0x9fd3ff, 1);
                 sky.fillRect(0, 0, width, height);
 
-                for (let i = 0; i < 8; i++) {
+                for (let i = 0; i < 6; i++) {
                     const x = Phaser.Math.Between(50, width - 50);
-                    const y = Phaser.Math.Between(80, height - 300);
+                    const y = Phaser.Math.Between(80, 600);
                     this.desenharNuvem(x, y);
+                }
+
+                // Chão visual
+                const chao = this.add.graphics();
+                chao.fillStyle(0x4ade80, 1);
+                chao.fillRect(0, 900, width, 20);
+                chao.fillStyle(0x8B4513, 1);
+                chao.fillRect(0, 920, width, 40);
+                chao.lineStyle(2, 0x654321);
+                for (let x = 0; x < width; x += 40) {
+                    chao.strokeRect(x, 920, 40, 20);
+                    chao.strokeRect(x + 20, 940, 40, 20);
                 }
             }
 
@@ -238,14 +245,14 @@
             }
 
             criarPlataformas(width, height) {
+                // Chão em y=900, Arthur em y=860
+                // Pulo alcança ~200px, espaçamento de 150px entre plataformas
                 const posicoes = [
-                    { x: width * 0.25, y: height - 320 },
-                    { x: width * 0.75, y: height - 440 },
-                    { x: width * 0.3, y: height - 560 },
-                    { x: width * 0.7, y: height - 680 },
-                    { x: width * 0.25, y: height - 790 },
-                    { x: width * 0.75, y: height - 890 },
-                    { x: width * 0.35, y: height - 990 }
+                    { x: width * 0.5, y: 720 },      // 1ª plataforma
+                    { x: width * 0.25, y: 570 },
+                    { x: width * 0.75, y: 420 },
+                    { x: width * 0.3, y: 270 },
+                    { x: width * 0.7, y: 150 }
                 ];
 
                 posicoes.forEach(pos => {
@@ -272,14 +279,12 @@
 
             criarMoedas() {
                 const width = this.cameras.main.width;
-                const height = this.cameras.main.height;
                 const posicoesMoedas = [
-                    { x: width * 0.25, y: height - 380 },
-                    { x: width * 0.75, y: height - 500 },
-                    { x: width * 0.3, y: height - 620 },
-                    { x: width * 0.7, y: height - 740 },
-                    { x: width * 0.25, y: height - 840 },
-                    { x: width * 0.75, y: height - 950 }
+                    { x: width * 0.5, y: 660 },
+                    { x: width * 0.25, y: 510 },
+                    { x: width * 0.75, y: 360 },
+                    { x: width * 0.3, y: 210 },
+                    { x: width * 0.7, y: 90 }
                 ];
                 posicoesMoedas.forEach(pos => {
                     const coin = this.coins.create(pos.x, pos.y, null).setVisible(false);
@@ -298,12 +303,10 @@
 
             criarInimigos() {
                 const width = this.cameras.main.width;
-                const height = this.cameras.main.height;
                 const posicoes = [
-                    { x: width * 0.75, y: height - 500, min: width * 0.6, max: width * 0.9 },
-                    { x: width * 0.3, y: height - 620, min: width * 0.15, max: width * 0.45 },
-                    { x: width * 0.7, y: height - 740, min: width * 0.55, max: width * 0.85 },
-                    { x: width * 0.35, y: height - 930, min: width * 0.2, max: width * 0.5 }
+                    { x: width * 0.25, y: 540, min: width * 0.15, max: width * 0.4 },
+                    { x: width * 0.75, y: 390, min: width * 0.6, max: width * 0.9 },
+                    { x: width * 0.3, y: 240, min: width * 0.2, max: width * 0.45 }
                 ];
                 posicoes.forEach(pos => {
                     const enemy = this.enemies.create(pos.x, pos.y, null).setVisible(false);
@@ -330,8 +333,8 @@
             }
 
             criarBandeira(width, height) {
-                this.bandeiraX = width * 0.35;
-                this.bandeiraY = height - 990;
+                this.bandeiraX = width * 0.7;
+                this.bandeiraY = 150;
 
                 const g = this.add.graphics();
                 g.fillStyle(0xcccccc, 1);
@@ -362,28 +365,21 @@
                 const width = this.cameras.main.width;
                 const height = this.cameras.main.height;
                 const btnSize = 70;
-                // ==========================================
-                // MARGEM MAIOR EMBAIXO (era 10, agora 100)
-                // ==========================================
                 const marginSides = 15;
                 const marginBottom = 100;
 
-                // Esquerda
                 this.btnLeft = this.add.circle(marginSides + btnSize/2, height - marginBottom - btnSize/2, btnSize/2, 0xffffff, 0.35).setScrollFactor(0).setDepth(1000);
                 this.btnLeft.setInteractive({ useHandCursor: true });
                 this.add.text(marginSides + btnSize/2, height - marginBottom - btnSize/2, '◀', { fontFamily: 'monospace', fontSize: '34px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-                // Direita
                 this.btnRight = this.add.circle(marginSides + btnSize + 10 + btnSize/2, height - marginBottom - btnSize/2, btnSize/2, 0xffffff, 0.35).setScrollFactor(0).setDepth(1000);
                 this.btnRight.setInteractive({ useHandCursor: true });
                 this.add.text(marginSides + btnSize + 10 + btnSize/2, height - marginBottom - btnSize/2, '▶', { fontFamily: 'monospace', fontSize: '34px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-                // Pular
                 this.btnJump = this.add.circle(width - marginSides - btnSize/2, height - marginBottom - btnSize/2, btnSize/2 + 5, 0xffd700, 0.5).setScrollFactor(0).setDepth(1000);
                 this.btnJump.setInteractive({ useHandCursor: true });
                 this.add.text(width - marginSides - btnSize/2, height - marginBottom - btnSize/2, '⬆', { fontFamily: 'monospace', fontSize: '40px', fill: '#ffffff', stroke: '#000000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(1001);
 
-                // Eventos
                 this.btnLeft.on('pointerdown', () => { this.moveLeft = true; this.btnLeft.setFillStyle(0xffffff, 0.7); });
                 this.btnLeft.on('pointerup', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.35); });
                 this.btnLeft.on('pointerout', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.35); });
@@ -456,7 +452,7 @@
                 if (this.isGameOver || this.isWin) return;
 
                 const speed = 220;
-                const jumpForce = -700;
+                const jumpForce = -750;
 
                 if (this.moveLeft || this.cursors.left.isDown) {
                     this.player.setVelocityX(-speed);
