@@ -36,6 +36,7 @@
     <script>
         const GAME_WIDTH = 960;
         const GAME_HEIGHT = 540;
+        const MAP_WIDTH = GAME_WIDTH * 3; // Mapa mais longo (3x a tela)
 
         // ==========================================
         // BOOT SCENE
@@ -162,6 +163,8 @@
                 this.moveLeft = false;
                 this.moveRight = false;
                 this.jump = false;
+                this.lavaAtiva = false;       // lava ainda desligada
+                this.chaoGraphics = null;      // guarda o desenho do chão
 
                 this.platforms = this.physics.add.staticGroup();
                 this.coins = this.physics.add.group();
@@ -185,10 +188,17 @@
                 this.physics.add.overlap(this.player, this.coins, this.coletarMoeda, null, this);
                 this.physics.add.overlap(this.player, this.enemies, this.atingirInimigo, null, this);
 
+                // Zona de lava (só ativa depois que ele pisa na 1ª plataforma)
+                this.lavaZone = this.add.zone(MAP_WIDTH/2, height - 20, MAP_WIDTH, 40);
+                this.physics.world.enable(this.lavaZone);
+                this.lavaZone.body.setAllowGravity(false);
+                this.lavaZone.body.setImmovable(true);
+                this.physics.add.overlap(this.player, this.lavaZone, this.cairNaLava, null, this);
+
                 this.criarBandeira(width);
 
-                this.cameras.main.setBounds(0, 0, width * 2, height);
-                this.physics.world.setBounds(0, 0, width * 2, height);
+                this.cameras.main.setBounds(0, 0, MAP_WIDTH, height);
+                this.physics.world.setBounds(0, 0, MAP_WIDTH, height);
                 this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
                 this.criarControlesTateis();
@@ -199,39 +209,83 @@
             }
 
             criarCenario(width, height) {
-                // Céu com gradiente (mais bonito)
+                // Céu
                 const sky = this.add.graphics();
                 sky.fillGradientStyle(0x5c94fc, 0x5c94fc, 0x9fd3ff, 0x9fd3ff, 1);
-                sky.fillRect(0, 0, width * 2, height);
+                sky.fillRect(0, 0, MAP_WIDTH, height);
 
-                // Chão bem definido (2 faixas)
-                const ground = this.add.graphics();
-                // Faixa superior (grama)
-                ground.fillStyle(0x4ade80, 1);
-                ground.fillRect(0, height - 80, width * 2, 20);
-                // Faixa inferior (terra)
-                ground.fillStyle(0x8B4513, 1);
-                ground.fillRect(0, height - 60, width * 2, 60);
-                // Textura de tijolos na terra
-                ground.lineStyle(2, 0x654321);
-                for (let x = 0; x < width * 2; x += 40) {
-                    ground.strokeRect(x, height - 60, 40, 30);
-                    ground.strokeRect(x + 20, height - 30, 40, 30);
-                }
+                // Chão (vai ser substituído por lava depois)
+                this.chaoGraphics = this.add.graphics();
+                this.desenharChaoNormal(this.chaoGraphics, height);
 
-                // Nuvens organizadas em fileira
-                for (let i = 0; i < 8; i++) {
-                    const cloudX = 100 + i * 280;
-                    const cloudY = 80 + (i % 2) * 40;
+                // Nuvens em fileira por todo o mapa
+                for (let i = 0; i < 24; i++) {
+                    const cloudX = 100 + i * 120;
+                    const cloudY = 80 + (i % 3) * 30;
                     this.desenharNuvem(cloudX, cloudY);
                 }
 
-                // Arbustos no chão (só nas bordas das plataformas)
-                const posicoesArbustos = [150, 450, 750, 1050, 1350, 1650];
-                posicoesArbustos.forEach(x => {
-                    if (x < width * 2 - 100) {
-                        this.desenharArbusto(x, height - 80);
-                    }
+                // Arbustos espalhados
+                for (let x = 150; x < MAP_WIDTH - 100; x += 300) {
+                    this.desenharArbusto(x, height - 80);
+                }
+            }
+
+            desenharChaoNormal(g, height) {
+                g.clear();
+                // Grama em cima
+                g.fillStyle(0x4ade80, 1);
+                g.fillRect(0, height - 80, MAP_WIDTH, 20);
+                // Terra embaixo
+                g.fillStyle(0x8B4513, 1);
+                g.fillRect(0, height - 60, MAP_WIDTH, 60);
+                // Tijolos
+                g.lineStyle(2, 0x654321);
+                for (let x = 0; x < MAP_WIDTH; x += 40) {
+                    g.strokeRect(x, height - 60, 40, 30);
+                    g.strokeRect(x + 20, height - 30, 40, 30);
+                }
+            }
+
+            desenharChaoLava(g, height) {
+                g.clear();
+                // Lava brilhante
+                g.fillStyle(0xff4500, 1);
+                g.fillRect(0, height - 80, MAP_WIDTH, 80);
+                // Camada de lava mais clara
+                g.fillStyle(0xff6347, 1);
+                g.fillRect(0, height - 80, MAP_WIDTH, 15);
+                // Bolhas de lava (aleatórias mas fixas)
+                g.fillStyle(0xffaa00, 1);
+                for (let x = 30; x < MAP_WIDTH; x += 90) {
+                    g.fillCircle(x, height - 60, 8);
+                    g.fillCircle(x + 40, height - 40, 6);
+                    g.fillCircle(x + 20, height - 25, 5);
+                }
+                // Brilho laranja por cima
+                g.fillStyle(0xffd700, 0.4);
+                g.fillRect(0, height - 80, MAP_WIDTH, 5);
+            }
+
+            ativarLava() {
+                if (this.lavaAtiva) return;
+                this.lavaAtiva = true;
+                this.desenharChaoLava(this.chaoGraphics, this.cameras.main.height);
+
+                // Aviso piscando
+                const width = this.cameras.main.width;
+                const height = this.cameras.main.height;
+                const aviso = this.add.text(width/2, height * 0.4, '🔥 A LAVA SUBIU! 🔥', {
+                    fontFamily: 'monospace', fontSize: '48px', fill: '#ff4500',
+                    stroke: '#000000', strokeThickness: 6
+                }).setOrigin(0.5).setScrollFactor(0).setDepth(500);
+
+                this.tweens.add({
+                    targets: aviso,
+                    alpha: 0,
+                    scale: 1.5,
+                    duration: 1500,
+                    onComplete: () => aviso.destroy()
                 });
             }
 
@@ -257,56 +311,69 @@
             }
 
             criarPlataformas(width, height) {
-                // Chão
-                const ground = this.platforms.create(width, height - 20, null).setVisible(false);
-                ground.body.setSize(width * 2, 40);
-                ground.setPosition(width, height - 20);
+                // Chão sólido (só a primeira parte — depois vira lava)
+                const ground = this.platforms.create(MAP_WIDTH/2, height - 20, null).setVisible(false);
+                ground.body.setSize(MAP_WIDTH, 40);
+                ground.setPosition(MAP_WIDTH/2, height - 20);
 
-                // Plataformas bem espaçadas, alcançáveis com o pulo novo
+                // Plataformas — percurso longo e escalonado
                 const posicoes = [
-                    { x: 350, y: height - 180 },
-                    { x: 600, y: height - 260 },
-                    { x: 850, y: height - 180 },
-                    { x: 1100, y: height - 300 },
-                    { x: 1350, y: height - 220 },
-                    { x: 1600, y: height - 180 }
+                    // Primeira plataforma (ativa a lava)
+                    { x: 350, y: height - 180, ativaLava: true },
+                    // Restante do percurso
+                    { x: 550, y: height - 260 },
+                    { x: 750, y: height - 180 },
+                    { x: 950, y: height - 280 },
+                    { x: 1150, y: height - 200 },
+                    { x: 1350, y: height - 300 },
+                    { x: 1550, y: height - 220 },
+                    { x: 1750, y: height - 180 },
+                    { x: 1950, y: height - 280 },
+                    { x: 2150, y: height - 200 },
+                    { x: 2350, y: height - 260 },
+                    { x: 2550, y: height - 180 },
+                    { x: 2750, y: height - 240 }
                 ];
 
                 posicoes.forEach(pos => {
                     const plat = this.platforms.create(pos.x, pos.y, null).setVisible(false);
-                    plat.body.setSize(140, 30);
+                    plat.body.setSize(120, 30);
                     plat.setPosition(pos.x, pos.y);
+                    plat.ativaLava = pos.ativaLava || false;
                     this.desenharPlataforma(pos.x, pos.y);
                 });
             }
 
             desenharPlataforma(x, y) {
                 const g = this.add.graphics();
-                // Base marrom
                 g.fillStyle(0x8B4513, 1);
-                g.fillRect(x - 70, y - 15, 140, 30);
-                // Topo verde (grama)
+                g.fillRect(x - 60, y - 15, 120, 30);
                 g.fillStyle(0x4ade80, 1);
-                g.fillRect(x - 70, y - 15, 140, 8);
-                // Tijolos
+                g.fillRect(x - 60, y - 15, 120, 8);
                 g.lineStyle(2, 0x654321);
-                for (let i = -70; i < 70; i += 35) {
-                    g.strokeRect(x + i, y - 7, 35, 22);
+                for (let i = -60; i < 60; i += 30) {
+                    g.strokeRect(x + i, y - 7, 30, 22);
                 }
-                // Borda superior
                 g.lineStyle(2, 0x2e7d32);
-                g.strokeRect(x - 70, y - 15, 140, 8);
+                g.strokeRect(x - 60, y - 15, 120, 8);
             }
 
             criarMoedas() {
-                // Moedas acima das plataformas
                 const posicoesMoedas = [
+                    // Moedas ao longo do percurso
                     { x: 350, y: 300 }, { x: 380, y: 300 },
-                    { x: 600, y: 230 }, { x: 630, y: 230 },
-                    { x: 850, y: 300 },
-                    { x: 1100, y: 180 }, { x: 1130, y: 180 },
-                    { x: 1350, y: 260 },
-                    { x: 1600, y: 300 }
+                    { x: 550, y: 220 },
+                    { x: 750, y: 300 }, { x: 780, y: 300 },
+                    { x: 950, y: 200 },
+                    { x: 1150, y: 280 }, { x: 1180, y: 280 },
+                    { x: 1350, y: 180 },
+                    { x: 1550, y: 260 },
+                    { x: 1750, y: 300 }, { x: 1780, y: 300 },
+                    { x: 1950, y: 200 },
+                    { x: 2150, y: 280 },
+                    { x: 2350, y: 220 }, { x: 2380, y: 220 },
+                    { x: 2550, y: 300 },
+                    { x: 2750, y: 240 }
                 ];
                 posicoesMoedas.forEach(pos => {
                     const coin = this.coins.create(pos.x, pos.y, null).setVisible(false);
@@ -325,9 +392,12 @@
 
             criarInimigos() {
                 const posicoesInimigos = [
-                    { x: 400, y: 400, min: 300, max: 500 },
-                    { x: 800, y: 400, min: 700, max: 900 },
-                    { x: 1200, y: 400, min: 1100, max: 1300 }
+                    { x: 600, y: 400, min: 550, max: 650 },
+                    { x: 1000, y: 400, min: 950, max: 1100 },
+                    { x: 1500, y: 400, min: 1450, max: 1600 },
+                    { x: 2000, y: 400, min: 1950, max: 2100 },
+                    { x: 2400, y: 400, min: 2350, max: 2500 },
+                    { x: 2700, y: 400, min: 2650, max: 2800 }
                 ];
                 posicoesInimigos.forEach(pos => {
                     const enemy = this.enemies.create(pos.x, pos.y, null).setVisible(false);
@@ -355,7 +425,7 @@
             }
 
             criarBandeira(width) {
-                this.bandeiraX = width * 2 - 200;
+                this.bandeiraX = MAP_WIDTH - 150;
                 this.bandeiraY = 400;
                 const g = this.add.graphics();
                 g.fillStyle(0xcccccc, 1);
@@ -364,6 +434,12 @@
                 g.fillTriangle(this.bandeiraX + 10, this.bandeiraY - 150, this.bandeiraX + 10, this.bandeiraY - 100, this.bandeiraX + 80, this.bandeiraY - 125);
                 g.fillStyle(0xffffff, 1);
                 g.fillCircle(this.bandeiraX + 35, this.bandeiraY - 125, 8);
+
+                // Plataforma da bandeira
+                const plat = this.platforms.create(this.bandeiraX + 20, this.bandeiraY, null).setVisible(false);
+                plat.body.setSize(120, 30);
+                plat.setPosition(this.bandeiraX + 20, this.bandeiraY);
+                this.desenharPlataforma(this.bandeiraX + 20, this.bandeiraY);
             }
 
             criarControlesTateis() {
@@ -371,9 +447,6 @@
                 const height = this.cameras.main.height;
                 const btnSize = 90;
                 const margin = 15;
-
-                // IMPORTANTE: usar setInteractive com 'useHandCursor' e eventos 'pointerdown/up'
-                // Multi-touch: cada botão tem seu próprio estado
 
                 this.btnLeft = this.add.circle(margin + btnSize/2, height - margin - btnSize/2, btnSize/2, 0xffffff, 0.3).setScrollFactor(0).setDepth(100);
                 this.btnLeft.setInteractive({ useHandCursor: true });
@@ -387,50 +460,19 @@
                 this.btnJump.setInteractive({ useHandCursor: true });
                 this.add.text(width - margin - btnSize/2, height - margin - btnSize/2, '⬆', { fontFamily: 'monospace', fontSize: '48px', fill: '#ffffff' }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
 
-                // Multi-touch: cada botão tem seu próprio listener
-                // O input do Phaser já suporta multi-touch por padrão em mobile
+                this.btnLeft.on('pointerdown', () => { this.moveLeft = true; this.btnLeft.setFillStyle(0xffffff, 0.6); });
+                this.btnLeft.on('pointerup', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.3); });
+                this.btnLeft.on('pointerout', () => { this.moveLeft = false; this.btnLeft.setFillStyle(0xffffff, 0.3); });
 
-                this.btnLeft.on('pointerdown', (pointer) => {
-                    this.moveLeft = true;
-                    this.btnLeft.setFillStyle(0xffffff, 0.6);
-                });
-                this.btnLeft.on('pointerup', () => {
-                    this.moveLeft = false;
-                    this.btnLeft.setFillStyle(0xffffff, 0.3);
-                });
-                this.btnLeft.on('pointerout', () => {
-                    this.moveLeft = false;
-                    this.btnLeft.setFillStyle(0xffffff, 0.3);
-                });
+                this.btnRight.on('pointerdown', () => { this.moveRight = true; this.btnRight.setFillStyle(0xffffff, 0.6); });
+                this.btnRight.on('pointerup', () => { this.moveRight = false; this.btnRight.setFillStyle(0xffffff, 0.3); });
+                this.btnRight.on('pointerout', () => { this.moveRight = false; this.btnRight.setFillStyle(0xffffff, 0.3); });
 
-                this.btnRight.on('pointerdown', (pointer) => {
-                    this.moveRight = true;
-                    this.btnRight.setFillStyle(0xffffff, 0.6);
-                });
-                this.btnRight.on('pointerup', () => {
-                    this.moveRight = false;
-                    this.btnRight.setFillStyle(0xffffff, 0.3);
-                });
-                this.btnRight.on('pointerout', () => {
-                    this.moveRight = false;
-                    this.btnRight.setFillStyle(0xffffff, 0.3);
-                });
+                this.btnJump.on('pointerdown', () => { this.jump = true; this.btnJump.setFillStyle(0xffd700, 0.7); });
+                this.btnJump.on('pointerup', () => { this.jump = false; this.btnJump.setFillStyle(0xffd700, 0.4); });
+                this.btnJump.on('pointerout', () => { this.jump = false; this.btnJump.setFillStyle(0xffd700, 0.4); });
 
-                this.btnJump.on('pointerdown', (pointer) => {
-                    this.jump = true;
-                    this.btnJump.setFillStyle(0xffd700, 0.7);
-                });
-                this.btnJump.on('pointerup', () => {
-                    this.jump = false;
-                    this.btnJump.setFillStyle(0xffd700, 0.4);
-                });
-                this.btnJump.on('pointerout', () => {
-                    this.jump = false;
-                    this.btnJump.setFillStyle(0xffd700, 0.4);
-                });
-
-                // Ativa multi-touch explicitamente
-                this.input.addPointer(3); // até 4 toques simultâneos
+                this.input.addPointer(3);
             }
 
             criarHUD() {
@@ -449,6 +491,15 @@
                 this.scoreText.setText('PONTOS: ' + this.score);
             }
 
+            cairNaLava(player, lava) {
+                if (this.isGameOver || this.isWin) return;
+                if (!this.lavaAtiva) return; // lava não ativou ainda
+                // Só mata se o jogador estiver no chão (não pulando)
+                if (player.body.touching.down) {
+                    this.gameOver('🔥 VOCÊ CAIU NA LAVA! 🔥');
+                }
+            }
+
             atingirInimigo(player, enemy) {
                 if (this.isGameOver || this.isWin) return;
                 if (player.body.velocity.y > 0 && player.y < enemy.y - 20) {
@@ -458,24 +509,25 @@
                     this.score += 200;
                     this.scoreText.setText('PONTOS: ' + this.score);
                 } else {
-                    this.isGameOver = true;
-                    this.physics.pause();
-                    player.setTint(0xff0000);
-                    const width = this.cameras.main.width;
-                    const height = this.cameras.main.height;
-                    this.add.text(width/2, height/2, 'GAME OVER', { fontFamily: 'monospace', fontSize: '48px', fill: '#ff0000', stroke: '#000000', strokeThickness: 6 }).setOrigin(0.5).setScrollFactor(0).setDepth(300);
-                    const btnRestart = this.add.text(width/2, height/2 + 80, '🔄 TENTAR NOVAMENTE', { fontFamily: 'monospace', fontSize: '24px', fill: '#ffffff', backgroundColor: '#e24a4a', padding: { x: 20, y: 15 } }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive();
-                    btnRestart.on('pointerdown', () => { this.scene.restart(); });
+                    this.gameOver('💀 GAME OVER 💀');
                 }
+            }
+
+            gameOver(mensagem) {
+                this.isGameOver = true;
+                this.physics.pause();
+                this.player.setTint(0xff0000);
+                const width = this.cameras.main.width;
+                const height = this.cameras.main.height;
+                this.add.text(width/2, height/2 - 30, mensagem, { fontFamily: 'monospace', fontSize: '32px', fill: '#ff0000', stroke: '#000000', strokeThickness: 6 }).setOrigin(0.5).setScrollFactor(0).setDepth(300);
+                const btnRestart = this.add.text(width/2, height/2 + 60, '🔄 TENTAR NOVAMENTE', { fontFamily: 'monospace', fontSize: '24px', fill: '#ffffff', backgroundColor: '#e24a4a', padding: { x: 20, y: 15 } }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setInteractive();
+                btnRestart.on('pointerdown', () => { this.scene.restart(); });
             }
 
             update() {
                 if (this.isGameOver || this.isWin) return;
 
                 const speed = 220;
-                // ==================================================
-                // PULO MAIS ALTO (antes era -500, agora -720)
-                // ==================================================
                 const jumpForce = -720;
 
                 if (this.moveLeft || this.cursors.left.isDown) {
@@ -488,21 +540,34 @@
                     this.player.setVelocityX(0);
                 }
 
-                // ==================================================
-                // MULTI-TOUCH: andar e pular ao mesmo tempo funciona
-                // porque moveLeft/moveRight e jump são variáveis independentes
-                // ==================================================
                 if ((this.jump || this.cursors.up.isDown || this.spaceKey.isDown) && this.player.body.touching.down) {
                     this.player.setVelocityY(jumpForce);
                 }
 
-                // Troca de sprite (andando / pulando / parado)
+                // Sprite
                 if (!this.player.body.touching.down) {
                     this.player.setTexture('arthur_pulando');
                 } else if (this.moveLeft || this.moveRight || this.cursors.left.isDown || this.cursors.right.isDown) {
                     this.player.setTexture('arthur_andando');
                 } else {
                     this.player.setTexture('arthur_parado');
+                }
+
+                // ==================================================
+                // ATIVA A LAVA quando ele pisa na 1ª plataforma
+                // (detecta se o player está em cima de alguma plataforma)
+                // ==================================================
+                if (!this.lavaAtiva) {
+                    this.platforms.children.iterate(plat => {
+                        if (plat && plat.active && plat.ativaLava) {
+                            const dx = Math.abs(this.player.x - plat.x);
+                            const dy = this.player.y - plat.y;
+                            // Se está em cima da plataforma (perto em X, acima em Y)
+                            if (dx < 80 && dy > -30 && dy < 30 && this.player.body.touching.down) {
+                                this.ativarLava();
+                            }
+                        }
+                    });
                 }
 
                 this.enemies.children.iterate(enemy => {
@@ -601,7 +666,7 @@
         }
 
         // ==========================================
-        // CONFIG FINAL — CANVAS (compatível com todos navegadores)
+        // CONFIG FINAL
         // ==========================================
         const config = {
             type: Phaser.CANVAS,
@@ -612,9 +677,7 @@
             pixelArt: false,
             roundPixels: true,
             disableContextMenu: true,
-            input: {
-                activePointers: 4  // ← Multi-touch: até 4 dedos ao mesmo tempo
-            },
+            input: { activePointers: 4 },
             scale: {
                 mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -633,7 +696,7 @@
             } catch (e) {
                 const box = document.getElementById('error-box');
                 box.style.display = 'block';
-                box.innerText = '❌ ERRO ao criar Phaser: ' + e.message;
+                box.innerText = '❌ ERRO: ' + e.message;
             }
         });
 
